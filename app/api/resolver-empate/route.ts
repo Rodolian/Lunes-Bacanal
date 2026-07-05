@@ -57,8 +57,6 @@ export async function POST(req: NextRequest) {
       ...(docSnap.data() as Omit<UsuarioDoc, "uid">),
     }));
 
-    const creatorUser = usersList.find((u) => u.uid === ev.creador_uid);
-    const creatorName = creatorUser?.nombre || ev.creador_email || "Anónimo";
 
     // 4. Find and map confirmed attendees
     const attendeesEmails = (ev.votos || [])

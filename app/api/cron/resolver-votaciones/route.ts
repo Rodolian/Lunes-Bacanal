@@ -123,7 +123,6 @@ export async function GET(req: NextRequest) {
       }
 
       const creatorUser = usersList.find((u) => u.uid === ev.creador_uid);
-      const creatorName = creatorUser?.nombre || ev.creador_email || "Anónimo";
       const creatorEmail = creatorUser?.email || ev.creador_email;
 
       // 5. Send notification email based on resolution result

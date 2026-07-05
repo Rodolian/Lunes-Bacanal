@@ -118,7 +118,6 @@ export async function POST(req: NextRequest) {
     }
 
     const creatorUser = usersList.find((u) => u.uid === ev.creador_uid);
-    const creatorName = creatorUser?.nombre || ev.creador_email || "Anónimo";
     const creatorEmail = creatorUser?.email || ev.creador_email;
 
     // 5. Send notification emails

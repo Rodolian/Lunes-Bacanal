@@ -27,6 +27,7 @@ interface Evento {
 }
 
 interface UsuarioFirestore {
+  uid?: string;
   email?: string;
   nombre?: string;
   photoURL?: string | null;
@@ -56,8 +57,7 @@ export default function DashboardPage() {
   const [loadingData, setLoadingData] = useState(true);
   const [dbUser, setDbUser] = useState<UsuarioFirestore | null>(null);
   const [resolvingId, setResolvingId] = useState<string | null>(null);
-
-  const todayStr = new Date().toISOString().split("T")[0];
+  const [usersList, setUsersList] = useState<UsuarioFirestore[]>([]);
 
   const getInitials = () => {
     if (dbUser?.nombre) {
@@ -68,6 +68,17 @@ export default function DashboardPage() {
     }
     return "?";
   };
+
+  useEffect(() => {
+    if (!db) return;
+    return onSnapshot(collection(db, "usuarios"), (snapshot) => {
+      const list = snapshot.docs.map((docSnap) => ({
+        uid: docSnap.id,
+        ...docSnap.data(),
+      })) as UsuarioFirestore[];
+      setUsersList(list);
+    });
+  }, []);
 
   useEffect(() => {
     if (!db || !user?.uid) return;
@@ -129,14 +140,29 @@ export default function DashboardPage() {
     };
   }, [user]);
 
-  // Helper to determine if an event is in the past / resolved
+  // Helper to determine if an event is in the past / resolved (closed + > 1 day after fecha_elegida)
   const isPastEvent = (event: Evento) => {
-    if (event.estado === "cerrado") return true;
-    if (event.estado === "empate") return false; // Needs manual resolution
-    if (event.fecha_elegida && event.fecha_elegida < todayStr) return true;
-    if (event.fecha_evento && event.fecha_evento < todayStr) return true;
-    if (event.fecha_tope && event.fecha_tope < todayStr) return true;
-    return false;
+    if (event.estado !== "cerrado" || !event.fecha_elegida) return false;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const parts = event.fecha_elegida.split("-");
+    if (parts.length !== 3) return false;
+    const elegidaDate = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+    elegidaDate.setHours(0, 0, 0, 0);
+
+    const graceDate = new Date(elegidaDate);
+    graceDate.setDate(graceDate.getDate() + 1);
+    graceDate.setHours(0, 0, 0, 0);
+
+    return today.getTime() > graceDate.getTime();
+  };
+
+  const getCreatorName = (creadorUid?: string, creadorEmail?: string) => {
+    if (!creadorUid) return creadorEmail || "Anónimo";
+    const found = usersList.find((u) => u.uid === creadorUid);
+    return found?.nombre || found?.email || creadorEmail || "Anónimo";
   };
 
   const pastEvents = allEvents.filter((ev) => isPastEvent(ev));
@@ -357,43 +383,68 @@ export default function DashboardPage() {
                     key={ev.id}
                     className="p-5 rounded-xl border border-slate-850 bg-slate-900/20 space-y-2 relative overflow-hidden"
                   >
-                    <div className="absolute top-0 right-0 bg-slate-800 text-slate-400 text-[10px] uppercase font-bold px-2 py-0.5 rounded-bl-lg">
-                      Oculto
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-xs text-slate-500">
-                        Fecha Límite: <span className="text-slate-300">{ev.fecha_tope}</span>
-                      </p>
-                      <h4 className="font-bold text-slate-300">
-                        Motivo: <span className="text-slate-500 italic select-none">[Reservado - Secreto]</span>
-                      </h4>
-                      <p className="text-xs text-slate-400">
-                        Creador: <span className="text-slate-500 italic select-none">[Anónimo]</span>
-                      </p>
-
-                      {/* Active votes preview */}
-                      <div className="mt-4 pt-3 border-t border-slate-800 space-y-1.5 text-left">
-                        <p className="text-[10px] font-bold text-slate-550 uppercase tracking-wider">
-                          Votación en Curso (Votos de invitados)
-                        </p>
-                        <div className="grid grid-cols-2 gap-2">
-                          {ev.fechas_propuestas?.map((fecha) => {
-                            const count = getVoteCountForDate(ev, fecha);
-                            return (
-                              <div
-                                key={fecha}
-                                className="flex justify-between items-center bg-slate-950/40 border border-slate-850 px-2 py-1 rounded text-xs"
-                              >
-                                <span className="text-slate-400">{formatVoteDate(fecha)}</span>
-                                <span className="font-bold text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded">
-                                  {count}
-                                </span>
-                              </div>
-                            );
-                          })}
+                    {ev.estado === "cerrado" ? (
+                      <>
+                        <div className="absolute top-0 right-0 bg-green-600 text-white text-[10px] uppercase font-bold px-2 py-0.5 rounded-bl-lg">
+                          Programado
                         </div>
-                      </div>
-                    </div>
+                        <div className="space-y-1">
+                          <p className="text-xs text-green-400 font-semibold flex items-center gap-1.5">
+                            <span className="h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse"></span>
+                            ¡Bacanal cerrada y programada!
+                          </p>
+                          <h4 className="font-bold text-white text-base">
+                            Fecha elegida: <span className="text-green-400">{ev.fecha_elegida ? formatVoteDate(ev.fecha_elegida) : ""}</span>
+                          </h4>
+                          <p className="text-xs text-slate-400">
+                            Motivo: <span className="text-slate-500 italic select-none">[Reservado - Secreto]</span>
+                          </p>
+                          <p className="text-xs text-slate-400">
+                            Creador: <span className="text-slate-500 italic select-none">[Anónimo]</span>
+                          </p>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="absolute top-0 right-0 bg-slate-800 text-slate-400 text-[10px] uppercase font-bold px-2 py-0.5 rounded-bl-lg">
+                          Oculto
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-xs text-slate-500">
+                            Fecha Límite: <span className="text-slate-300">{ev.fecha_tope}</span>
+                          </p>
+                          <h4 className="font-bold text-slate-300">
+                            Motivo: <span className="text-slate-500 italic select-none">[Reservado - Secreto]</span>
+                          </h4>
+                          <p className="text-xs text-slate-400">
+                            Creador: <span className="text-slate-500 italic select-none">[Anónimo]</span>
+                          </p>
+
+                          {/* Active votes preview */}
+                          <div className="mt-4 pt-3 border-t border-slate-800 space-y-1.5 text-left">
+                            <p className="text-[10px] font-bold text-slate-550 uppercase tracking-wider">
+                              Votación en Curso (Votos de invitados)
+                            </p>
+                            <div className="grid grid-cols-2 gap-2">
+                              {ev.fechas_propuestas?.map((fecha) => {
+                                const count = getVoteCountForDate(ev, fecha);
+                                return (
+                                  <div
+                                    key={fecha}
+                                    className="flex justify-between items-center bg-slate-950/40 border border-slate-850 px-2 py-1 rounded text-xs"
+                                  >
+                                    <span className="text-slate-400">{formatVoteDate(fecha)}</span>
+                                    <span className="font-bold text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded">
+                                      {count}
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
                 ))
               )}
@@ -418,14 +469,14 @@ export default function DashboardPage() {
                       Revelado
                     </div>
                     <div className="space-y-1">
-                      <p className="text-xs text-slate-500">
-                        Fecha Límite: <span className="text-slate-300">{ev.fecha_tope}</span>
+                      <p className="text-xs text-slate-550">
+                        Fecha del Bacanal: <span className="text-slate-350">{ev.fecha_elegida ? formatVoteDate(ev.fecha_elegida) : ""}</span>
                       </p>
                       <h4 className="font-bold text-white">
                         Motivo: <span className="text-indigo-400 font-semibold">{ev.motivo}</span>
                       </h4>
                       <p className="text-xs text-slate-300">
-                        Creado por: <span className="text-slate-400">{ev.creador_email || "Usuario de la App"}</span>
+                        Creado por: <span className="text-slate-400">{getCreatorName(ev.creador_uid, ev.creador_email)}</span>
                       </p>
                     </div>
                   </div>
