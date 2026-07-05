@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/firebase";
-import { doc, getDoc, updateDoc, getDocs, collection } from "firebase/firestore";
+import { adminDb } from "@/lib/firebaseAdmin";
 import nodemailer from "nodemailer";
 import SMTPTransport from "nodemailer/lib/smtp-transport";
 
@@ -17,17 +16,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (!db) {
-      return NextResponse.json(
-        { error: "Base de datos de Firestore no configurada." },
-        { status: 500 }
-      );
-    }
-
     // 1. Get the event
-    const eventDocRef = doc(db, "eventos", eventoId);
-    const eventDocSnap = await getDoc(eventDocRef);
-    if (!eventDocSnap.exists()) {
+    const eventDocRef = adminDb.collection("eventos").doc(eventoId);
+    const eventDocSnap = await eventDocRef.get();
+    if (!eventDocSnap.exists) {
       return NextResponse.json({ error: "Evento no encontrado." }, { status: 404 });
     }
 
@@ -47,7 +39,7 @@ export async function POST(req: NextRequest) {
     const ev = { id: eventDocSnap.id, ...eventDocSnap.data() } as EventoDoc;
 
     // 2. Update Firestore event doc
-    await updateDoc(eventDocRef, {
+    await eventDocRef.update({
       estado: "cerrado",
       fecha_elegida: fecha_elegida,
     });
@@ -59,11 +51,11 @@ export async function POST(req: NextRequest) {
       nombre?: string;
       photoURL?: string | null;
     }
-    const usersSnapshot = await getDocs(collection(db, "usuarios"));
+    const usersSnapshot = await adminDb.collection("usuarios").get();
     const usersList = usersSnapshot.docs.map((docSnap) => ({
       uid: docSnap.id,
-      ...docSnap.data(),
-    })) as UsuarioDoc[];
+      ...(docSnap.data() as Omit<UsuarioDoc, "uid">),
+    }));
 
     const creatorUser = usersList.find((u) => u.uid === ev.creador_uid);
     const creatorName = creatorUser?.nombre || ev.creador_email || "Anónimo";

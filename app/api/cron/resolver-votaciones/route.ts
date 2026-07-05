@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/firebase";
-import { collection, getDocs, doc, updateDoc } from "firebase/firestore";
+import { adminDb } from "@/lib/firebaseAdmin";
 import nodemailer from "nodemailer";
 import SMTPTransport from "nodemailer/lib/smtp-transport";
 
@@ -23,6 +22,13 @@ interface Evento {
   estado?: string;
   fecha_elegida?: string;
   fechas_empatadas?: string[];
+}
+
+interface UsuarioDoc {
+  uid: string;
+  email?: string;
+  nombre?: string;
+  photoURL?: string | null;
 }
 
 const formatVoteDate = (dateStr: string) => {
@@ -48,22 +54,13 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    if (!db) {
-      return NextResponse.json(
-        { error: "Base de datos de Firestore no configurada." },
-        { status: 500 }
-      );
-    }
-
     const todayStr = new Date().toISOString().split("T")[0];
 
     // 2. Fetch all events to evaluate OR conditions in memory
-    const querySnapshot = await getDocs(collection(db, "eventos"));
+    const querySnapshot = await adminDb.collection("eventos").get();
 
-    // We process events that are not already 'cerrado' or 'empate'
-    // and that satisfy: (fecha_tope <= today) OR (everyone has voted, i.e. votantes_pendientes is empty)
     const eventsToResolve = querySnapshot.docs
-      .map((docSnap) => ({ id: docSnap.id, ...docSnap.data() } as Evento))
+      .map((docSnap) => ({ id: docSnap.id, ...(docSnap.data() as Omit<Evento, "id">) }))
       .filter((ev) => {
         if (ev.estado === "cerrado" || ev.estado === "empate") return false;
 
@@ -114,19 +111,13 @@ export async function GET(req: NextRequest) {
       const winner = !isTie ? winningDates[0] : null;
 
       // 4. Retrieve all user profiles for data matching
-      interface UsuarioDoc {
-        uid: string;
-        email?: string;
-        nombre?: string;
-        photoURL?: string | null;
-      }
       let usersList: UsuarioDoc[] = [];
       try {
-        const usersSnapshot = await getDocs(collection(db, "usuarios"));
+        const usersSnapshot = await adminDb.collection("usuarios").get();
         usersList = usersSnapshot.docs.map((docSnap) => ({
           uid: docSnap.id,
-          ...docSnap.data(),
-        })) as UsuarioDoc[];
+          ...(docSnap.data() as Omit<UsuarioDoc, "uid">),
+        }));
       } catch (fetchUsersErr) {
         console.error("Error fetching users list:", fetchUsersErr);
       }
@@ -151,7 +142,6 @@ export async function GET(req: NextRequest) {
 
         if (winner) {
           // --- CASE A: Absolute Winner ---
-          // Cruce de Datos en Memoria & Filtrado de Asistentes
           const attendeesEmails = (ev.votos || [])
             .filter((voto) => voto.fechas_elegidas.includes(winner))
             .map((voto) => voto.email);
@@ -163,10 +153,8 @@ export async function GET(req: NextRequest) {
               photoURL: u.photoURL || null,
             }));
 
-          // Ordenación alfabética por nombre
           confirmedAttendees.sort((a, b) => a.nombre.localeCompare(b.nombre));
 
-          // Construcción del HTML
           const getAvatarHtml = (photoURL: string | null, name: string) => {
             if (photoURL) {
               return `<img src="${photoURL}" width="30" height="30" style="border-radius: 50%; object-fit: cover; display: block;" alt="avatar" />`;
@@ -241,7 +229,6 @@ export async function GET(req: NextRequest) {
             </div>
           `;
 
-          // Envío a todos los usuarios registrados
           const allEmails = usersList
             .map((u) => u.email)
             .filter((email): email is string => typeof email === "string");
@@ -294,14 +281,14 @@ export async function GET(req: NextRequest) {
       }
 
       // 6. Update Firestore document (set state based on winner/tie)
-      const eventDocRef = doc(db, "eventos", ev.id);
+      const eventDocRef = adminDb.collection("eventos").doc(ev.id);
       if (winner) {
-        await updateDoc(eventDocRef, {
+        await eventDocRef.update({
           estado: "cerrado",
           fecha_elegida: winner,
         });
       } else {
-        await updateDoc(eventDocRef, {
+        await eventDocRef.update({
           estado: "empate",
           fechas_empatadas: winningDates,
         });

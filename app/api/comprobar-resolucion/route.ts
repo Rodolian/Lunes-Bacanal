@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/firebase";
-import { doc, getDoc, collection, getDocs, updateDoc } from "firebase/firestore";
+import { adminDb } from "@/lib/firebaseAdmin";
 import nodemailer from "nodemailer";
 import SMTPTransport from "nodemailer/lib/smtp-transport";
 
@@ -52,15 +51,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Falta eventoId." }, { status: 400 });
     }
 
-    if (!db) {
-      return NextResponse.json({ error: "DB no configurada." }, { status: 500 });
-    }
-
     // 1. Read the current state of the event
-    const eventDocRef = doc(db, "eventos", eventoId);
-    const eventDocSnap = await getDoc(eventDocRef);
+    const eventDocRef = adminDb.collection("eventos").doc(eventoId);
+    const eventDocSnap = await eventDocRef.get();
 
-    if (!eventDocSnap.exists()) {
+    if (!eventDocSnap.exists) {
       return NextResponse.json({ error: "Evento no encontrado." }, { status: 404 });
     }
 
@@ -113,11 +108,11 @@ export async function POST(req: NextRequest) {
     // 4. Fetch all users
     let usersList: UsuarioDoc[] = [];
     try {
-      const usersSnapshot = await getDocs(collection(db, "usuarios"));
+      const usersSnapshot = await adminDb.collection("usuarios").get();
       usersList = usersSnapshot.docs.map((docSnap) => ({
         uid: docSnap.id,
-        ...docSnap.data(),
-      })) as UsuarioDoc[];
+        ...(docSnap.data() as Omit<UsuarioDoc, "uid">),
+      }));
     } catch (fetchErr) {
       console.error("Error fetching users:", fetchErr);
     }
@@ -265,12 +260,12 @@ export async function POST(req: NextRequest) {
 
     // 6. Update Firestore with result
     if (winner) {
-      await updateDoc(eventDocRef, {
+      await eventDocRef.update({
         estado: "cerrado",
         fecha_elegida: winner,
       });
     } else {
-      await updateDoc(eventDocRef, {
+      await eventDocRef.update({
         estado: "empate",
         fechas_empatadas: winningDates,
       });
