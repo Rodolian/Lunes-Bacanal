@@ -35,6 +35,85 @@ const formatVoteDate = (dateStr: string) => {
   return `${daysOfWeek[date.getDay()]} ${date.getDate()}`;
 };
 
+const generateCalendarHtml = (winnerDateStr: string) => {
+  const parts = winnerDateStr.split("-");
+  if (parts.length !== 3) return "";
+  const year = Number(parts[0]);
+  const month = Number(parts[1]) - 1; // 0-indexed
+  const day = Number(parts[2]);
+
+  const monthNames = [
+    "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+    "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+  ];
+  const monthName = monthNames[month];
+
+  // First day of month
+  const firstDay = new Date(year, month, 1);
+  // Day of week for first day (0 = Sunday, 1 = Monday, etc.)
+  // We want Monday as first day: 0 = Mon, 1 = Tue, ..., 6 = Sun
+  let startDayIndex = firstDay.getDay() - 1;
+  if (startDayIndex < 0) startDayIndex = 6; // Sunday becomes index 6
+
+  // Total days in month
+  const totalDays = new Date(year, month + 1, 0).getDate();
+
+  // Create weeks grid
+  const weeks: (number | null)[][] = [];
+  let currentWeek: (number | null)[] = Array(7).fill(null);
+
+  // Fill empty spaces before first day
+  for (let i = 0; i < startDayIndex; i++) {
+    currentWeek[i] = null;
+  }
+
+  let dayCounter = 1;
+  let weekIndex = startDayIndex;
+
+  while (dayCounter <= totalDays) {
+    currentWeek[weekIndex] = dayCounter;
+    dayCounter++;
+    weekIndex++;
+    if (weekIndex === 7 || dayCounter > totalDays) {
+      weeks.push(currentWeek);
+      currentWeek = Array(7).fill(null);
+      weekIndex = 0;
+    }
+  }
+
+  // Generate HTML table
+  const headers = ["L", "M", "X", "J", "V", "S", "D"];
+  const headerHtml = headers.map(h => `<th style="padding: 6px; font-size: 11px; color: #94a3b8; text-align: center; font-weight: bold;">${h}</th>`).join("");
+
+  const weeksHtml = weeks.map(w => {
+    const cells = w.map(d => {
+      if (d === null) {
+        return `<td style="padding: 6px; text-align: center; font-size: 12px; color: #475569;"></td>`;
+      }
+      const isWinner = d === day;
+      if (isWinner) {
+        return `<td style="padding: 6px; text-align: center;"><div style="width: 28px; height: 28px; line-height: 28px; border-radius: 50%; background-color: #fbbf24; color: #020617; font-weight: bold; font-size: 12px; display: inline-block; box-shadow: 0 0 10px rgba(251,191,36,0.5);">${d}</div></td>`;
+      }
+      return `<td style="padding: 6px; text-align: center; font-size: 12px; color: #cbd5e1;">${d}</td>`;
+    }).join("");
+    return `<tr>${cells}</tr>`;
+  }).join("");
+
+  return `
+    <div style="background-color: #020617; border: 1px solid #1e293b; border-radius: 8px; padding: 16px; width: 240px; margin: 16px auto; font-family: sans-serif; text-align: center;">
+      <div style="font-size: 13px; font-weight: bold; color: #ffffff; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em;">${monthName} ${year}</div>
+      <table style="width: 100%; border-collapse: collapse;">
+        <thead>
+          <tr>${headerHtml}</tr>
+        </thead>
+        <tbody>
+          ${weeksHtml}
+        </tbody>
+      </table>
+    </div>
+  `;
+};
+
 const getAvatarHtml = (photoURL: string | null, name: string) => {
   if (photoURL) {
     return `<img src="${photoURL}" width="30" height="30" style="border-radius: 50%; object-fit: cover; display: block;" alt="avatar" />`;
@@ -141,7 +220,7 @@ export async function POST(req: NextRequest) {
           .map((voto) => voto.email);
 
         const confirmedAttendees = usersList
-          .filter((u) => u.email && attendeesEmails.includes(u.email))
+          .filter((u) => u.email && (attendeesEmails.includes(u.email) || u.uid === ev.creador_uid))
           .map((u) => ({
             nombre: u.nombre || "Usuario Anónimo",
             photoURL: u.photoURL || null,
@@ -176,10 +255,19 @@ export async function POST(req: NextRequest) {
               <p style="color: #64748b; font-size: 13px; margin: 0;">🤫 Secreto Revelado</p>
             </div>
             <div style="background-color: #0f172a; border: 1px solid #1e293b; border-radius: 8px; padding: 24px; margin-bottom: 24px;">
-              <h2 style="color: #10b981; margin-top: 0; font-size: 18px; font-weight: bold;">🎉 ¡Bacanal Confirmado!</h2>
+              <h2 style="color: #10b981; margin-top: 0; font-size: 18px; font-weight: bold; text-align: center;">🎉 ¡Bacanal Confirmado!</h2>
 
-              <div style="margin: 16px 0; padding: 16px; background-color: #020617; border: 1px solid #1e293b; border-radius: 6px; font-size: 14px; line-height: 1.6;">
-                <strong>Fecha elegida:</strong> <span style="color: #10b981; font-weight: bold;">${formatVoteDate(winner)} (${winner})</span>
+              <div style="margin: 16px 0; padding: 16px; background-color: #020617; border: 1px solid #1e293b; border-radius: 6px; font-size: 14px; line-height: 1.6; text-align: center;">
+                <span style="color: #94a3b8; font-size: 13px;">Fecha Elegida:</span>
+                <div style="color: #fbbf24; font-size: 18px; font-weight: 850; margin: 4px 0 12px 0;">
+                  ${formatVoteDate(winner)}
+                </div>
+                ${generateCalendarHtml(winner)}
+                <div style="margin-top: 16px;">
+                  <a href="https://calendar.google.com/calendar/render?action=TEMPLATE&text=Lunes+de+Bacanal&dates=${winner.replace(/-/g, "")}T200000/${winner.replace(/-/g, "")}T235959&details=Reuni%C3%B3n+Lunes+de+Bacanal.+%C2%A1Secreto+revelado!" target="_blank" style="background-color: #fbbf24; color: #020617; padding: 8px 20px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 12px; display: inline-block;">
+                    📅 Añadir a Google Calendar
+                  </a>
+                </div>
               </div>
               <h3 style="color: #ffffff; font-size: 14px; font-weight: bold; margin-top: 24px; margin-bottom: 12px; border-bottom: 1px solid #1e293b; padding-bottom: 6px;">
                 Lista de Asistentes Confirmados (${confirmedAttendees.length})
@@ -210,7 +298,7 @@ export async function POST(req: NextRequest) {
             from: senderEmail,
             to: senderEmail,
             bcc: allEmails,
-            subject: "📢 Resultado de tu votación para la bacanal",
+            subject: `Re: ¡Nuevo Lunes de Bacanal propuesto! [Ref: ${eventoId.slice(-6)}]`,
             html: emailHtml,
           });
         }
@@ -224,7 +312,7 @@ export async function POST(req: NextRequest) {
             <div style="background-color: #020617; color: #f8fafc; padding: 32px; font-family: sans-serif; border-radius: 12px; max-width: 600px; margin: 0 auto; border: 1px solid #1e293b;">
               <h2 style="color: #f59e0b; margin-top: 0;">⚠️ Empate en la votación de tu bacanal</h2>
               <p style="font-size: 15px; line-height: 1.6; color: #cbd5e1;">
-                Tu bacanal propuesta ha terminado en empate.
+                Tu propuesta de bacanal ha terminado en empate.
               </p>
               <p style="font-size: 15px; line-height: 1.6; color: #cbd5e1;">
                 Entra en tu panel de control de la aplicación para elegir la fecha ganadora y notificar a los asistentes.
@@ -243,7 +331,7 @@ export async function POST(req: NextRequest) {
           await transporter.sendMail({
             from: senderEmail,
             to: creatorEmail,
-            subject: "📢 Resultado de tu votación para la bacanal",
+            subject: `Re: ¡Nuevo Lunes de Bacanal propuesto! [Ref: ${eventoId.slice(-6)}]`,
             html: emailHtml,
           });
         }

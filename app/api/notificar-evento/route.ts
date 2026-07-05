@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
       from: senderEmail,
       to: senderEmail, // Send to self to satisfy SMTP rules
       bcc: votantes,   // BCC all voters for privacy
-      subject: "🤫 ¡Nuevo Lunes de Bacanal sorpresa propuesto!",
+      subject: `¡Nuevo Lunes de Bacanal propuesto! [Ref: ${eventoId.slice(-6)}]`,
       html: `
         <div style="background-color: #020617; color: #f8fafc; padding: 32px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; border-radius: 12px; max-width: 600px; margin: 0 auto; border: 1px solid #1e293b;">
           <div style="text-align: center; margin-bottom: 24px;">
