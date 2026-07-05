@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/firebase";
-import { collection, query, where, getDocs, doc, updateDoc } from "firebase/firestore";
+import { collection, getDocs, doc, updateDoc } from "firebase/firestore";
 import nodemailer from "nodemailer";
 import SMTPTransport from "nodemailer/lib/smtp-transport";
 
@@ -22,6 +22,7 @@ interface Evento {
   votos?: Voto[];
   estado?: string;
   fecha_elegida?: string;
+  fechas_empatadas?: string[];
 }
 
 const formatVoteDate = (dateStr: string) => {
@@ -56,21 +57,26 @@ export async function GET(req: NextRequest) {
 
     const todayStr = new Date().toISOString().split("T")[0];
 
-    // 2. Fetch all events that reached or passed the deadline (fecha_tope <= today)
-    const q = query(
-      collection(db, "eventos"),
-      where("fecha_tope", "<=", todayStr)
-    );
-    const querySnapshot = await getDocs(q);
+    // 2. Fetch all events to evaluate OR conditions in memory
+    const querySnapshot = await getDocs(collection(db, "eventos"));
 
-    const expiredEvents = querySnapshot.docs
+    // We process events that are not already 'cerrado' or 'empate'
+    // and that satisfy: (fecha_tope <= today) OR (everyone has voted, i.e. votantes_pendientes is empty)
+    const eventsToResolve = querySnapshot.docs
       .map((docSnap) => ({ id: docSnap.id, ...docSnap.data() } as Evento))
-      .filter((ev) => ev.estado !== "cerrado");
+      .filter((ev) => {
+        if (ev.estado === "cerrado" || ev.estado === "empate") return false;
+
+        const isDeadlineReached = ev.fecha_tope ? ev.fecha_tope <= todayStr : false;
+        const everyoneHasVoted = Array.isArray(ev.votantes_pendientes) && ev.votantes_pendientes.length === 0;
+
+        return isDeadlineReached || everyoneHasVoted;
+      });
 
     const processedEvents = [];
 
-    // 3. Process each expired event
-    for (const ev of expiredEvents) {
+    // 3. Process each event
+    for (const ev of eventsToResolve) {
       const propuestas = ev.fechas_propuestas || [];
       const countMap: Record<string, number> = {};
 
@@ -163,7 +169,7 @@ export async function GET(req: NextRequest) {
           // Construcción del HTML
           const getAvatarHtml = (photoURL: string | null, name: string) => {
             if (photoURL) {
-              return `<img src="${photoURL}" width="30" height="30" style="border-radius: 50%; object-fit: cover; display: block;" alt="avatar" />;`;
+              return `<img src="${photoURL}" width="30" height="30" style="border-radius: 50%; object-fit: cover; display: block;" alt="avatar" />`;
             }
             const initials = name.substring(0, 2).toUpperCase();
             return `<div style="width: 30px; height: 30px; border-radius: 50%; background-color: #4f46e5; color: #ffffff; text-align: center; line-height: 30px; font-size: 11px; font-weight: bold; display: block;">${initials}</div>`;
@@ -191,7 +197,7 @@ export async function GET(req: NextRequest) {
                   L
                 </div>
                 <h1 style="color: #ffffff; font-size: 22px; font-weight: 800; margin-top: 16px; margin-bottom: 4px; letter-spacing: -0.025em;">
-                  Lunes Bacanal
+                  Lunes de Bacanal
                 </h1>
                 <p style="color: #64748b; font-size: 13px; margin: 0;">🤫 Secreto Revelado</p>
               </div>
@@ -229,7 +235,7 @@ export async function GET(req: NextRequest) {
 
               <div style="border-top: 1px solid #1e293b; padding-top: 16px; text-align: center;">
                 <p style="font-size: 11px; color: #475569; margin: 0; line-height: 1.5;">
-                  Este correo fue enviado a todos los miembros registrados de Lunes Bacanal.
+                  Este correo fue enviado a todos los miembros registrados de Lunes de Bacanal.
                 </p>
               </div>
             </div>
@@ -252,24 +258,25 @@ export async function GET(req: NextRequest) {
         } else {
           // --- CASE B: Tie (Send ONLY to creator) ---
           if (creatorEmail) {
-            const formattedTies = winningDates
-              .map((d) => `<li><strong>${formatVoteDate(d)}</strong> (${d})</li>`)
-              .join("");
+            const origin = req.headers.get("origin") || "";
+            const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || origin || "http://localhost:3000";
 
             const emailHtml = `
               <div style="background-color: #020617; color: #f8fafc; padding: 32px; font-family: sans-serif; border-radius: 12px; max-width: 600px; margin: 0 auto; border: 1px solid #1e293b;">
                 <h2 style="color: #f59e0b; margin-top: 0;">⚠️ Empate en la votación de tu bacanal</h2>
                 <p style="font-size: 15px; line-height: 1.6; color: #cbd5e1;">
-                  La votación para tu bacanal con el motivo <strong>"${ev.motivo || "Sin motivo"}"</strong> ha concluido, pero no hay un ganador absoluto. Las siguientes fechas han quedado empatadas con el máximo número de votos:
+                  Tu bacanal para el motivo <strong>"${ev.motivo || "Sin motivo"}"</strong> ha terminado en empate.
                 </p>
-                <ul style="color: #cbd5e1; font-size: 15px; line-height: 1.8; margin: 20px 0; padding-left: 20px;">
-                  ${formattedTies || "<li>Ninguna fecha propuesta ha recibido votos.</li>"}
-                </ul>
-                <p style="font-size: 14px; color: #94a3b8; line-height: 1.6;">
-                  Como creador, puedes elegir cuál de estas opciones prefieres y acordar la fecha manualmente.
+                <p style="font-size: 15px; line-height: 1.6; color: #cbd5e1;">
+                  Entra en tu panel de control de la aplicación para elegir la fecha ganadora y notificar a los asistentes.
                 </p>
+                <div style="text-align: center; margin: 24px 0;">
+                  <a href="${baseUrl}" style="background-color: #4f46e5; color: #ffffff; padding: 12px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 14px; display: inline-block;">
+                    Ir al Panel de Control
+                  </a>
+                </div>
                 <p style="font-size: 13px; color: #64748b; margin: 0; border-top: 1px solid #1e293b; padding-top: 16px;">
-                  El evento ha quedado cerrado en el sistema para impedir nuevas votaciones.
+                  El evento ha quedado en estado de empate en el sistema para permitirte decidir la fecha definitiva.
                 </p>
               </div>
             `;
@@ -286,17 +293,19 @@ export async function GET(req: NextRequest) {
         console.error(`Error sending resolution emails for event ${ev.id}:`, emailErr);
       }
 
-      // 6. Update Firestore document (set state as closed, and save chosen date if absolute winner exists)
+      // 6. Update Firestore document (set state based on winner/tie)
       const eventDocRef = doc(db, "eventos", ev.id);
-      const updateData: Partial<Evento> = {
-        estado: "cerrado",
-      };
-
       if (winner) {
-        updateData.fecha_elegida = winner;
+        await updateDoc(eventDocRef, {
+          estado: "cerrado",
+          fecha_elegida: winner,
+        });
+      } else {
+        await updateDoc(eventDocRef, {
+          estado: "empate",
+          fechas_empatadas: winningDates,
+        });
       }
-
-      await updateDoc(eventDocRef, updateData);
 
       processedEvents.push({
         id: ev.id,
@@ -308,7 +317,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      processed_count: processedEvents.length,
+      processed_count: eventsToResolve.length,
       processed: processedEvents,
     });
   } catch (err: unknown) {

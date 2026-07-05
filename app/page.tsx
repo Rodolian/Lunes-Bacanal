@@ -22,6 +22,8 @@ interface Evento {
   fecha_elegida?: string;
   fecha_evento?: string;
   votos?: Voto[];
+  estado?: string;
+  fechas_empatadas?: string[];
 }
 
 interface UsuarioFirestore {
@@ -53,6 +55,7 @@ export default function DashboardPage() {
   const [allEvents, setAllEvents] = useState<Evento[]>([]);
   const [loadingData, setLoadingData] = useState(true);
   const [dbUser, setDbUser] = useState<UsuarioFirestore | null>(null);
+  const [resolvingId, setResolvingId] = useState<string | null>(null);
 
   const todayStr = new Date().toISOString().split("T")[0];
 
@@ -126,8 +129,10 @@ export default function DashboardPage() {
     };
   }, [user]);
 
-  // Helper to determine if an event is in the past
+  // Helper to determine if an event is in the past / resolved
   const isPastEvent = (event: Evento) => {
+    if (event.estado === "cerrado") return true;
+    if (event.estado === "empate") return false; // Needs manual resolution
     if (event.fecha_elegida && event.fecha_elegida < todayStr) return true;
     if (event.fecha_evento && event.fecha_evento < todayStr) return true;
     if (event.fecha_tope && event.fecha_tope < todayStr) return true;
@@ -135,7 +140,33 @@ export default function DashboardPage() {
   };
 
   const pastEvents = allEvents.filter((ev) => isPastEvent(ev));
-  const futureEvents = allEvents.filter((ev) => !isPastEvent(ev));
+  const futureEvents = allEvents.filter((ev) => !isPastEvent(ev) && ev.estado !== "empate");
+  const tiedEvents = allEvents.filter((ev) => ev.creador_uid === user?.uid && ev.estado === "empate");
+
+  const handleResolveTie = async (eventoId: string, fecha: string) => {
+    const key = `${eventoId}-${fecha}`;
+    setResolvingId(key);
+    try {
+      const response = await fetch("/api/resolver-empate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ eventoId, fecha_elegida: fecha }),
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Error al resolver el empate.");
+      }
+      alert("¡Empate resuelto con éxito! La notificación ha sido enviada a todos los participantes.");
+    } catch (err: unknown) {
+      console.error("Error resolving tie:", err);
+      const msg = err instanceof Error ? err.message : "Error al resolver el empate.";
+      alert(msg);
+    } finally {
+      setResolvingId(null);
+    }
+  };
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-950 text-slate-100 font-[family-name:var(--font-geist-sans)]">
@@ -195,6 +226,63 @@ export default function DashboardPage() {
             Solicitar Lunes de Bacanal
           </Link>
         </section>
+
+        {/* Votaciones en Empate Section */}
+        {tiedEvents.length > 0 && (
+          <section className="space-y-4">
+            <h2 className="text-xl font-bold tracking-tight text-red-500 flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse"></span>
+              <span>Votaciones en Empate</span>
+              <span className="rounded-full bg-red-500/20 px-2 py-0.5 text-xs text-red-400 font-semibold">
+                {tiedEvents.length}
+              </span>
+            </h2>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {tiedEvents.map((evento) => (
+                <div
+                  key={evento.id}
+                  className="rounded-xl border border-red-500/30 bg-red-950/10 p-6 flex flex-col justify-between space-y-4 hover:border-red-500/50 transition-colors shadow-lg shadow-red-500/5"
+                >
+                  <div className="space-y-2">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-red-500/10 px-2.5 py-0.5 text-xs font-semibold text-red-400">
+                      Resolución requerida
+                    </span>
+                    <h3 className="font-bold text-white text-lg">
+                      ¡Empate! Elige la fecha definitiva:
+                    </h3>
+                    <p className="text-sm font-semibold text-slate-350">
+                      Motivo: <span className="text-slate-200">{evento.motivo || "Sin motivo"}</span>
+                    </p>
+                    <p className="text-xs text-slate-400">
+                      Fecha límite: <strong className="text-slate-300">{evento.fecha_tope}</strong>
+                    </p>
+                  </div>
+                  
+                  {/* Tie-breaker action buttons */}
+                  <div className="flex flex-col gap-2 pt-2">
+                    {evento.fechas_empatadas && evento.fechas_empatadas.length > 0 ? (
+                      evento.fechas_empatadas.map((fecha) => (
+                        <button
+                          key={fecha}
+                          onClick={() => handleResolveTie(evento.id, fecha)}
+                          disabled={resolvingId === `${evento.id}-${fecha}`}
+                          className="w-full flex justify-between items-center rounded-lg bg-red-950/40 border border-red-500/20 px-4 py-2.5 text-sm font-medium text-slate-200 hover:bg-red-900/20 hover:border-red-500/40 transition-all active:scale-[0.98] disabled:opacity-50"
+                        >
+                          <span>{formatVoteDate(fecha)}</span>
+                          <span className="text-[11px] bg-red-500/20 text-red-300 px-2 py-0.5 rounded font-bold">
+                            Elegir esta fecha
+                          </span>
+                        </button>
+                      ))
+                    ) : (
+                      <p className="text-xs text-slate-500 italic">No hay fechas empatadas disponibles.</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Pending Votes Section */}
         <section className="space-y-4">
