@@ -122,14 +122,9 @@ export async function POST(req: NextRequest) {
         </div>
 
         <div style="background-color: #0f172a; border: 1px solid #1e293b; border-radius: 8px; padding: 24px; margin-bottom: 24px;">
-          <h2 style="color: #10b981; margin-top: 0; font-size: 18px; font-weight: bold;">🎉 ¡Bacanal Confirmada!</h2>
-          <p style="font-size: 15px; line-height: 1.6; color: #cbd5e1;">
-            El secreto ha sido revelado. Aquí están los detalles definitivos de la propuesta:
-          </p>
+          <h2 style="color: #10b981; margin-top: 0; font-size: 18px; font-weight: bold;">🎉 ¡Bacanal Confirmado!</h2>
           
           <div style="margin: 16px 0; padding: 16px; background-color: #020617; border: 1px solid #1e293b; border-radius: 6px; font-size: 14px; line-height: 1.6;">
-            <strong>Motivo:</strong> <span style="color: #e2e8f0;">${ev.motivo || "No especificado"}</span><br />
-            <strong>Organizador:</strong> <span style="color: #e2e8f0;">${creatorName}</span><br />
             <strong>Fecha elegida:</strong> <span style="color: #10b981; font-weight: bold;">${formatVoteDate(fecha_elegida)} (${fecha_elegida})</span>
           </div>
           
@@ -137,19 +132,18 @@ export async function POST(req: NextRequest) {
             Lista de Asistentes Confirmados (${confirmedAttendees.length})
           </h3>
           
-          ${
-            confirmedAttendees.length > 0
-              ? `
+          ${confirmedAttendees.length > 0
+        ? `
             <table style="width: 100%; border-collapse: collapse;">
               <tbody>
                 ${tableRows}
               </tbody>
             </table>
           `
-              : `
+        : `
             <p style="font-size: 14px; color: #64748b; font-style: italic; margin: 0;">Nadie pudo asistir en esta fecha.</p>
           `
-          }
+      }
         </div>
 
         <div style="border-top: 1px solid #1e293b; padding-top: 16px; text-align: center;">

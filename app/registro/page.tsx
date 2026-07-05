@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { createUserWithEmailAndPassword, updateProfile, sendEmailVerification } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
 import { doc, setDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
@@ -57,6 +57,11 @@ export default function RegistroPage() {
           photoURL: null,
         });
       }
+
+      // Send verification email (non-blocking, helps with spam filters)
+      sendEmailVerification(registeredUser).catch((err) =>
+        console.error("Error sending verification email:", err)
+      );
 
       router.push("/");
     } catch (err: unknown) {
