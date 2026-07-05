@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc, arrayRemove, arrayUnion } from "firebase/firestore";
 import { useParams, useRouter } from "next/navigation";
 import flatpickr from "flatpickr";
 import { Spanish } from "flatpickr/dist/l10n/es.js";
@@ -137,22 +137,27 @@ export default function VotarPage() {
     setSubmitting(true);
 
     try {
-      const response = await fetch("/api/votar-y-resolver", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          eventoId: id,
+      if (!db) {
+        throw new Error("Base de datos de Firestore no configurada.");
+      }
+
+      const docRef = doc(db, "eventos", id);
+
+      // 1. Atomic vote write on client (user is authenticated here)
+      await updateDoc(docRef, {
+        votantes_pendientes: arrayRemove(user.email),
+        votos: arrayUnion({
           email: user.email,
-          selectedDates: selectedDates,
+          fechas_elegidas: selectedDates,
         }),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Error al registrar tu voto.");
-      }
+      // 2. Call server to check if resolution is needed (fire-and-forget)
+      fetch("/api/comprobar-resolucion", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ eventoId: id }),
+      }).catch((err) => console.error("Resolution check failed (non-blocking):", err));
 
       // Redirect home
       router.push("/");
