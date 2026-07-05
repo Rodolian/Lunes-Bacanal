@@ -281,7 +281,7 @@ export default function DashboardPage() {
                       Fecha límite: <strong className="text-slate-300">{evento.fecha_tope}</strong>
                     </p>
                   </div>
-                  
+
                   {/* Tie-breaker action buttons */}
                   <div className="flex flex-col gap-2 pt-2">
                     {evento.fechas_empatadas && evento.fechas_empatadas.length > 0 ? (
@@ -391,7 +391,7 @@ export default function DashboardPage() {
                         <div className="space-y-1">
                           <p className="text-xs text-green-400 font-semibold flex items-center gap-1.5">
                             <span className="h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse"></span>
-                            ¡Bacanal cerrada y programada!
+                            ¡Bacanal cerrada y programado!
                           </p>
                           <h4 className="font-bold text-white text-base">
                             Fecha elegida: <span className="text-green-400">{ev.fecha_elegida ? formatVoteDate(ev.fecha_elegida) : ""}</span>

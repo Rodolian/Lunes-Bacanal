@@ -245,7 +245,7 @@ export async function GET(req: NextRequest) {
               <div style="background-color: #020617; color: #f8fafc; padding: 32px; font-family: sans-serif; border-radius: 12px; max-width: 600px; margin: 0 auto; border: 1px solid #1e293b;">
                 <h2 style="color: #f59e0b; margin-top: 0;">⚠️ Empate en la votación de tu bacanal</h2>
                 <p style="font-size: 15px; line-height: 1.6; color: #cbd5e1;">
-                  Tu bacanal para el motivo <strong>"${ev.motivo || "Sin motivo"}"</strong> ha terminado en empate.
+                  Tu bacanal propuesta ha terminado en empate.
                 </p>
                 <p style="font-size: 15px; line-height: 1.6; color: #cbd5e1;">
                   Entra en tu panel de control de la aplicación para elegir la fecha ganadora y notificar a los asistentes.
