@@ -6,6 +6,7 @@ import { db } from "@/lib/firebase";
 import { doc, updateDoc, onSnapshot } from "firebase/firestore";
 import { updateProfile } from "firebase/auth";
 import Link from "next/link";
+import Header from "@/components/Header";
 
 interface UsuarioFirestore {
   email?: string;
@@ -197,15 +198,7 @@ export default function PerfilPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-950 text-slate-100 font-[family-name:var(--font-geist-sans)]">
-      {/* Navbar */}
-      <nav className="border-b border-slate-800 bg-slate-900/30 backdrop-blur-md px-6 py-4">
-        <div className="mx-auto flex max-w-7xl items-center justify-between">
-          <Link href="/" className="flex items-center gap-3">
-            <img src="/logo.jpg" alt="Lunes Bacanal" className="h-8 w-8 rounded-lg shadow-md shadow-indigo-500/20 object-cover" />
-            <span className="font-bold tracking-tight text-white">Lunes Bacanal</span>
-          </Link>
-        </div>
-      </nav>
+      <Header />
 
       {/* Main Content */}
       <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center p-6 my-10">

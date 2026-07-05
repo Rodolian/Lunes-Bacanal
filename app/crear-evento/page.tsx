@@ -10,14 +10,17 @@ import "flatpickr/dist/themes/dark.css";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+import Header from "@/components/Header";
+
 interface FlatpickrInstance {
   destroy: () => void;
   clear: () => void;
 }
 
 export default function CrearEventoPage() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
+
 
   // Form states
   const [motivo, setMotivo] = useState("Niños");
@@ -236,27 +239,7 @@ export default function CrearEventoPage() {
         }}
       />
 
-      {/* Navbar */}
-      <nav className="border-b border-slate-800 bg-slate-900/30 backdrop-blur-md px-6 py-4">
-        <div className="mx-auto flex max-w-7xl items-center justify-between">
-          <Link href="/" className="flex items-center gap-3">
-            <img src="/logo.jpg" alt="Lunes Bacanal" className="h-8 w-8 rounded-lg shadow-md shadow-indigo-500/20 object-cover" />
-            <span className="font-bold tracking-tight text-white">Lunes Bacanal</span>
-          </Link>
-
-          <div className="flex items-center gap-4">
-            <span className="hidden text-sm text-slate-400 sm:inline-block">
-              Conectado como: <strong className="text-slate-200">{user?.email}</strong>
-            </span>
-            <button
-              onClick={logout}
-              className="rounded-lg border border-slate-800 bg-slate-900 px-4 py-2 text-sm font-semibold text-slate-300 transition-all hover:bg-slate-800 hover:text-white"
-            >
-              Cerrar Sesión
-            </button>
-          </div>
-        </div>
-      </nav>
+      <Header />
 
       {/* Main Content */}
       <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col justify-center p-6 my-10">
