@@ -3,8 +3,9 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
-import { db } from "@/lib/firebase";
-import { doc, onSnapshot } from "firebase/firestore";
+import { subscribeToUserProfile } from "@/services/userService";
+import { logoutUser } from "@/services/authService";
+import { UserProfile } from "@/services/types";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -12,18 +13,11 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
-import { LogOut } from "lucide-react";
-
-interface UsuarioFirestore {
-  uid?: string;
-  email?: string;
-  nombre?: string;
-  photoURL?: string | null;
-}
+import { LogOut, User } from "lucide-react";
 
 export default function Header() {
-  const { user, logout } = useAuth();
-  const [dbUser, setDbUser] = useState<UsuarioFirestore | null>(null);
+  const { user } = useAuth();
+  const [dbUser, setDbUser] = useState<UserProfile | null>(null);
 
   const getInitials = () => {
     if (dbUser?.nombre) {
@@ -36,11 +30,9 @@ export default function Header() {
   };
 
   useEffect(() => {
-    if (!db || !user?.uid) return;
-    return onSnapshot(doc(db, "usuarios", user.uid), (docSnap) => {
-      if (docSnap.exists()) {
-        setDbUser(docSnap.data());
-      }
+    if (!user?.uid) return;
+    return subscribeToUserProfile(user.uid, (profile) => {
+      setDbUser(profile);
     });
   }, [user]);
 
@@ -68,7 +60,14 @@ export default function Header() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48 bg-zinc-900 border border-zinc-800 text-zinc-100">
               <DropdownMenuItem
-                onClick={logout}
+                render={<Link href="/perfil" />}
+                className="flex items-center gap-2 cursor-pointer text-zinc-300 hover:text-zinc-50 hover:bg-zinc-800 focus:bg-zinc-800 focus:text-zinc-50"
+              >
+                <User className="h-4 w-4" />
+                <span>Mi Perfil</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={logoutUser}
                 className="flex items-center gap-2 cursor-pointer text-zinc-300 hover:text-zinc-50 hover:bg-zinc-800 focus:bg-zinc-800 focus:text-zinc-50"
               >
                 <LogOut className="h-4 w-4" />

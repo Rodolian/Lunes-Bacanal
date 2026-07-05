@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebaseAdmin";
 import nodemailer from "nodemailer";
 import SMTPTransport from "nodemailer/lib/smtp-transport";
+import { headers } from "next/headers";
 
 export const dynamic = "force-dynamic";
 
@@ -96,7 +97,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 1. Get the event
-    const eventDocRef = adminDb.collection("eventos").doc(eventoId);
+    const eventDocRef = adminDb.collection("events").doc(eventoId);
     const eventDocSnap = await eventDocRef.get();
     if (!eventDocSnap.exists) {
       return NextResponse.json({ error: "Evento no encontrado." }, { status: 404 });
@@ -130,7 +131,7 @@ export async function POST(req: NextRequest) {
       nombre?: string;
       photoURL?: string | null;
     }
-    const usersSnapshot = await adminDb.collection("usuarios").get();
+    const usersSnapshot = await adminDb.collection("users").get();
     const usersList = usersSnapshot.docs.map((docSnap) => ({
       uid: docSnap.id,
       ...(docSnap.data() as Omit<UsuarioDoc, "uid">),
@@ -186,36 +187,39 @@ export async function POST(req: NextRequest) {
       )
       .join("");
 
+    const headersList = headers();
+    const origin = headersList.get("origin") || "";
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || origin || "http://localhost:3000";
+    const logoUrl = `${baseUrl}/logo.jpg`;
+
     const emailHtml = `
       <div style="background-color: #020617; color: #f8fafc; padding: 32px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; border-radius: 12px; max-width: 600px; margin: 0 auto; border: 1px solid #1e293b;">
         <div style="text-align: center; margin-bottom: 24px;">
-          <div style="display: inline-block; background-color: #4f46e5; color: #ffffff; width: 48px; height: 48px; line-height: 48px; border-radius: 12px; font-size: 24px; font-weight: bold;">
-            L
-          </div>
+          <img src="${logoUrl}" alt="Lunes Bacanal" style="width: 48px; height: 48px; border-radius: 12px; display: inline-block; object-fit: cover;" />
           <h1 style="color: #ffffff; font-size: 22px; font-weight: 800; margin-top: 16px; margin-bottom: 4px; letter-spacing: -0.025em;">
             Lunes de Bacanal
           </h1>
-          <p style="color: #64748b; font-size: 13px; margin: 0;">🤫 Secreto Revelado</p>
         </div>
 
         <div style="background-color: #0f172a; border: 1px solid #1e293b; border-radius: 8px; padding: 24px; margin-bottom: 24px;">
-          <h2 style="color: #10b981; margin-top: 0; font-size: 18px; font-weight: bold;">🎉 ¡Bacanal Confirmado!</h2>
+          <h2 style="color: #cbd5e1; margin-top: 0; font-size: 18px; font-weight: bold; text-align: center; border-bottom: 1px solid #1e293b; padding-bottom: 12px;">
+            Bacanal confirmada
+          </h2>
           
           <div style="margin: 16px 0; padding: 16px; background-color: #020617; border: 1px solid #1e293b; border-radius: 6px; font-size: 14px; line-height: 1.6; text-align: center;">
-            <span style="color: #94a3b8; font-size: 13px;">Fecha Elegida:</span>
-            <div style="color: #fbbf24; font-size: 18px; font-weight: 850; margin: 4px 0 12px 0;">
-              ${formatVoteDate(fecha_elegida)}
-            </div>
+            <p style="color: #e2e8f0; font-size: 15px; margin: 0 0 16px 0;">
+              Votación cerrada. Fecha definitiva: ${formatVoteDate(fecha_elegida)}.
+            </p>
             ${generateCalendarHtml(fecha_elegida)}
             <div style="margin-top: 16px;">
-              <a href="https://calendar.google.com/calendar/render?action=TEMPLATE&text=Lunes+de+Bacanal&dates=${fecha_elegida.replace(/-/g, "")}T200000/${fecha_elegida.replace(/-/g, "")}T235959&details=Reuni%C3%B3n+Lunes+de+Bacanal.+%C2%A1Secreto+revelado!" target="_blank" style="background-color: #fbbf24; color: #020617; padding: 8px 20px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 12px; display: inline-block;">
-                📅 Añadir a Google Calendar
+              <a href="https://calendar.google.com/calendar/render?action=TEMPLATE&text=Lunes+de+Bacanal&dates=${fecha_elegida.replace(/-/g, "")}T200000/${fecha_elegida.replace(/-/g, "")}T235959&details=Reunion+Lunes+de+Bacanal.+Secreto+revelado!" target="_blank" style="background-color: #fbbf24; color: #020617; padding: 8px 20px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 12px; display: inline-block;">
+                Añadir a Google Calendar
               </a>
             </div>
           </div>
           
           <h3 style="color: #ffffff; font-size: 14px; font-weight: bold; margin-top: 24px; margin-bottom: 12px; border-bottom: 1px solid #1e293b; padding-bottom: 6px;">
-            Lista de Asistentes Confirmados (${confirmedAttendees.length})
+            Asistentes confirmados a continuación (${confirmedAttendees.length})
           </h3>
           
           ${confirmedAttendees.length > 0
@@ -262,7 +266,7 @@ export async function POST(req: NextRequest) {
         from: senderEmail,
         to: senderEmail,
         bcc: allEmails,
-        subject: `Re: ¡Nuevo Lunes de Bacanal propuesto! [Ref: ${eventoId.slice(-6)}]`,
+        subject: `Bacanal confirmada: ${fecha_elegida}`,
         html: emailHtml,
       });
     }

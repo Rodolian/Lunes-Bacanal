@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebaseAdmin";
 import nodemailer from "nodemailer";
 import SMTPTransport from "nodemailer/lib/smtp-transport";
+import { headers } from "next/headers";
 
 export const dynamic = "force-dynamic";
 
@@ -128,10 +129,8 @@ export async function POST(req: NextRequest) {
 
     if (!eventoId) {
       return NextResponse.json({ error: "Falta eventoId." }, { status: 400 });
-    }
-
-    // 1. Read the current state of the event
-    const eventDocRef = adminDb.collection("eventos").doc(eventoId);
+    }    // 1. Read the current state of the event
+    const eventDocRef = adminDb.collection("events").doc(eventoId);
     const eventDocSnap = await eventDocRef.get();
 
     if (!eventDocSnap.exists) {
@@ -187,7 +186,7 @@ export async function POST(req: NextRequest) {
     // 4. Fetch all users
     let usersList: UsuarioDoc[] = [];
     try {
-      const usersSnapshot = await adminDb.collection("usuarios").get();
+      const usersSnapshot = await adminDb.collection("users").get();
       usersList = usersSnapshot.docs.map((docSnap) => ({
         uid: docSnap.id,
         ...(docSnap.data() as Omit<UsuarioDoc, "uid">),
@@ -198,6 +197,11 @@ export async function POST(req: NextRequest) {
 
     const creatorUser = usersList.find((u) => u.uid === ev.creador_uid);
     const creatorEmail = creatorUser?.email || ev.creador_email;
+
+    const headersList = headers();
+    const origin = headersList.get("origin") || "";
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || origin || "http://localhost:3000";
+    const logoUrl = `${baseUrl}/logo.jpg`;
 
     // 5. Send notification emails
     try {
@@ -246,40 +250,38 @@ export async function POST(req: NextRequest) {
         const emailHtml = `
           <div style="background-color: #020617; color: #f8fafc; padding: 32px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; border-radius: 12px; max-width: 600px; margin: 0 auto; border: 1px solid #1e293b;">
             <div style="text-align: center; margin-bottom: 24px;">
-              <div style="display: inline-block; background-color: #4f46e5; color: #ffffff; width: 48px; height: 48px; line-height: 48px; border-radius: 12px; font-size: 24px; font-weight: bold;">
-                L
-              </div>
+              <img src="${logoUrl}" alt="Lunes Bacanal" style="width: 48px; height: 48px; border-radius: 12px; display: inline-block; object-fit: cover;" />
               <h1 style="color: #ffffff; font-size: 22px; font-weight: 800; margin-top: 16px; margin-bottom: 4px; letter-spacing: -0.025em;">
                 Lunes de Bacanal
               </h1>
-              <p style="color: #64748b; font-size: 13px; margin: 0;">🤫 Secreto Revelado</p>
             </div>
             <div style="background-color: #0f172a; border: 1px solid #1e293b; border-radius: 8px; padding: 24px; margin-bottom: 24px;">
-              <h2 style="color: #10b981; margin-top: 0; font-size: 18px; font-weight: bold; text-align: center;">🎉 ¡Bacanal Confirmado!</h2>
+              <h2 style="color: #cbd5e1; margin-top: 0; font-size: 18px; font-weight: bold; text-align: center; border-bottom: 1px solid #1e293b; padding-bottom: 12px;">
+                Bacanal confirmada
+              </h2>
 
               <div style="margin: 16px 0; padding: 16px; background-color: #020617; border: 1px solid #1e293b; border-radius: 6px; font-size: 14px; line-height: 1.6; text-align: center;">
-                <span style="color: #94a3b8; font-size: 13px;">Fecha Elegida:</span>
-                <div style="color: #fbbf24; font-size: 18px; font-weight: 850; margin: 4px 0 12px 0;">
-                  ${formatVoteDate(winner)}
-                </div>
+                <p style="color: #e2e8f0; font-size: 15px; margin: 0 0 16px 0;">
+                  Votación cerrada. Fecha definitiva: ${formatVoteDate(winner)}.
+                </p>
                 ${generateCalendarHtml(winner)}
                 <div style="margin-top: 16px;">
-                  <a href="https://calendar.google.com/calendar/render?action=TEMPLATE&text=Lunes+de+Bacanal&dates=${winner.replace(/-/g, "")}T200000/${winner.replace(/-/g, "")}T235959&details=Reuni%C3%B3n+Lunes+de+Bacanal.+%C2%A1Secreto+revelado!" target="_blank" style="background-color: #fbbf24; color: #020617; padding: 8px 20px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 12px; display: inline-block;">
-                    📅 Añadir a Google Calendar
+                  <a href="https://calendar.google.com/calendar/render?action=TEMPLATE&text=Lunes+de+Bacanal&dates=${winner.replace(/-/g, "")}T200000/${winner.replace(/-/g, "")}T235959&details=Reunion+Lunes+de+Bacanal.+Secreto+revelado!" target="_blank" style="background-color: #fbbf24; color: #020617; padding: 8px 20px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 12px; display: inline-block;">
+                    Añadir a Google Calendar
                   </a>
                 </div>
               </div>
               <h3 style="color: #ffffff; font-size: 14px; font-weight: bold; margin-top: 24px; margin-bottom: 12px; border-bottom: 1px solid #1e293b; padding-bottom: 6px;">
-                Lista de Asistentes Confirmados (${confirmedAttendees.length})
+                Asistentes confirmados a continuación (${confirmedAttendees.length})
               </h3>
               ${confirmedAttendees.length > 0
-            ? `
-                <table style="width: 100%; border-collapse: collapse;">
-                  <tbody>${tableRows}</tbody>
-                </table>
-              `
-            : `<p style="font-size: 14px; color: #64748b; font-style: italic; margin: 0;">Nadie pudo asistir en esta fecha.</p>`
-          }
+                ? `
+                    <table style="width: 100%; border-collapse: collapse;">
+                      <tbody>${tableRows}</tbody>
+                    </table>
+                  `
+                : `<p style="font-size: 14px; color: #64748b; font-style: italic; margin: 0;">Nadie pudo asistir en esta fecha.</p>`
+              }
             </div>
             <div style="border-top: 1px solid #1e293b; padding-top: 16px; text-align: center;">
               <p style="font-size: 11px; color: #475569; margin: 0; line-height: 1.5;">
@@ -298,40 +300,43 @@ export async function POST(req: NextRequest) {
             from: senderEmail,
             to: senderEmail,
             bcc: allEmails,
-            subject: `Re: ¡Nuevo Lunes de Bacanal propuesto! [Ref: ${eventoId.slice(-6)}]`,
+            subject: `Bacanal confirmada: ${winner}`,
             html: emailHtml,
           });
         }
       } else {
         // --- Tie ---
         if (creatorEmail) {
-          const origin = req.headers.get("origin") || "";
-          const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || origin || "http://localhost:3000";
-
           const emailHtml = `
-            <div style="background-color: #020617; color: #f8fafc; padding: 32px; font-family: sans-serif; border-radius: 12px; max-width: 600px; margin: 0 auto; border: 1px solid #1e293b;">
-              <h2 style="color: #f59e0b; margin-top: 0;">⚠️ Empate en la votación de tu bacanal</h2>
-              <p style="font-size: 15px; line-height: 1.6; color: #cbd5e1;">
-                Tu propuesta de bacanal ha terminado en empate.
-              </p>
-              <p style="font-size: 15px; line-height: 1.6; color: #cbd5e1;">
-                Entra en tu panel de control de la aplicación para elegir la fecha ganadora y notificar a los asistentes.
-              </p>
-              <div style="text-align: center; margin: 24px 0;">
-                <a href="${baseUrl}" style="background-color: #4f46e5; color: #ffffff; padding: 12px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 14px; display: inline-block;">
-                  Ir al Panel de Control
-                </a>
+            <div style="background-color: #020617; color: #f8fafc; padding: 32px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; border-radius: 12px; max-width: 600px; margin: 0 auto; border: 1px solid #1e293b;">
+              <div style="text-align: center; margin-bottom: 24px;">
+                <img src="${logoUrl}" alt="Lunes Bacanal" style="width: 48px; height: 48px; border-radius: 12px; display: inline-block; object-fit: cover;" />
+                <h1 style="color: #ffffff; font-size: 22px; font-weight: 800; margin-top: 16px; margin-bottom: 4px; letter-spacing: -0.025em;">
+                  Lunes de Bacanal
+                </h1>
               </div>
-              <p style="font-size: 13px; color: #64748b; margin: 0; border-top: 1px solid #1e293b; padding-top: 16px;">
-                El evento ha quedado en estado de empate en el sistema para permitirte decidir la fecha definitiva.
-              </p>
+              <div style="background-color: #0f172a; border: 1px solid #1e293b; border-radius: 8px; padding: 24px; margin-bottom: 24px;">
+                <p style="font-size: 16px; line-height: 1.6; color: #e2e8f0; margin-top: 0; margin-bottom: 24px; text-align: center;">
+                  La votación ha terminado en empate. Entra en la aplicación para elegir la fecha definitiva.
+                </p>
+                <div style="text-align: center;">
+                  <a href="${baseUrl}" style="background-color: #4f46e5; color: #ffffff; padding: 12px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 14px; display: inline-block;">
+                    Resolver Empate
+                  </a>
+                </div>
+              </div>
+              <div style="border-top: 1px solid #1e293b; padding-top: 16px; text-align: center;">
+                <p style="font-size: 11px; color: #475569; margin: 0; line-height: 1.5;">
+                  Este correo fue enviado al organizador del Lunes de Bacanal.
+                </p>
+              </div>
             </div>
           `;
 
           await transporter.sendMail({
             from: senderEmail,
             to: creatorEmail,
-            subject: `Re: ¡Nuevo Lunes de Bacanal propuesto! [Ref: ${eventoId.slice(-6)}]`,
+            subject: `Empate en tu bacanal`,
             html: emailHtml,
           });
         }
