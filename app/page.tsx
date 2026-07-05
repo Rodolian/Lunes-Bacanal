@@ -174,9 +174,7 @@ export default function DashboardPage() {
       <nav className="border-b border-slate-800 bg-slate-900/30 backdrop-blur-md px-6 py-4">
         <div className="mx-auto flex max-w-7xl items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-lg bg-indigo-600 flex items-center justify-center font-bold text-white shadow-md shadow-indigo-500/20">
-              L
-            </div>
+            <img src="/logo.jpg" alt="Lunes Bacanal" className="h-8 w-8 rounded-lg shadow-md shadow-indigo-500/20 object-cover" />
             <span className="font-bold tracking-tight text-white">Lunes Bacanal</span>
           </div>
 
