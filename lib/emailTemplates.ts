@@ -162,7 +162,7 @@ export function getWinnerEmailHtml(
           </p>
           ${calendarPartStr}
           <div style="margin-top: 16px;">
-            <a href="https://calendar.google.com/calendar/render?action=TEMPLATE&text=Lunes+de+Bacanal&dates=${winnerDateStr.replace(/-/g, "")}T200000/${winnerDateStr.replace(/-/g, "")}T235959&details=Reunion+Lunes+de+Bacanal.+Secreto+revelado" target="_blank" style="background-color: #fbbf24; color: #020617; padding: 8px 20px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 12px; display: inline-block;">
+            <a href="https://calendar.google.com/calendar/render?action=TEMPLATE&text=Lunes+de+Bacanal&dates=${winnerDateStr.replace(/-/g, "")}T200000/${winnerDateStr.replace(/-/g, "")}T235959&details=Reunion+Lunes+de+Bacanal." target="_blank" style="background-color: #fbbf24; color: #020617; padding: 8px 20px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 12px; display: inline-block;">
               Añadir a Google Calendar
             </a>
           </div>
@@ -173,17 +173,17 @@ export function getWinnerEmailHtml(
         </h3>
         
         ${attendees.length > 0
-          ? `
+      ? `
               <table style="width: 100%; border-collapse: collapse;">
                 <tbody>
                   ${tableRows}
                 </tbody>
               </table>
             `
-          : `
+      : `
               <p style="font-size: 14px; color: #64748b; font-style: italic; margin: 0;">Nadie pudo asistir en esta fecha.</p>
             `
-        }
+    }
       </div>
 
       <div style="border-top: 1px solid #1e293b; padding-top: 16px; text-align: center;">
