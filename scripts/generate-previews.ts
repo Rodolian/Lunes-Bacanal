@@ -4,6 +4,7 @@ import {
   getNewEventEmailHtml,
   getWinnerEmailHtml,
   getTieEmailHtml,
+  getVerificationEmailHtml,
 } from "../lib/emailTemplates";
 
 const PREVIEWS_DIR = path.join(__dirname, "../doc/email-previews");
@@ -17,6 +18,7 @@ const dummyBaseUrl = "https://lunes-bacanal.vercel.app";
 // URL de prueba temporal para ver el logo
 const dummyLogoUrl = "https://lunes-bacanal.vercel.app/logo.jpg";
 const dummyVotingUrl = `${dummyBaseUrl}/votar/test-event-123`;
+const dummyVerificationLink = "https://lunes-bacanal.firebaseapp.com/__/auth/action?mode=verifyEmail&apiKey=AIzaSy...&oobCode=dummyCode";
 
 console.log("Generando vistas previas de notificaciones...");
 
@@ -39,5 +41,9 @@ fs.writeFileSync(path.join(PREVIEWS_DIR, "bacanal-confirmada.html"), winnerHtml,
 // 3. Email de Empate (Enviado al Organizador)
 const tieHtml = getTieEmailHtml(dummyBaseUrl, dummyLogoUrl);
 fs.writeFileSync(path.join(PREVIEWS_DIR, "empate.html"), tieHtml, "utf-8");
+
+// 4. Email de Confirmación de Registro (NUEVO)
+const verificationHtml = getVerificationEmailHtml(dummyLogoUrl, dummyVerificationLink);
+fs.writeFileSync(path.join(PREVIEWS_DIR, "confirmacion-registro.html"), verificationHtml, "utf-8");
 
 console.log(`Vistas previas creadas con éxito en: ${PREVIEWS_DIR}`);

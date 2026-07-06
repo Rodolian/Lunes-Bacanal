@@ -2,6 +2,7 @@ import {
   getNewEventEmailHtml,
   getWinnerEmailHtml,
   getTieEmailHtml,
+  getVerificationEmailHtml,
 } from "../lib/emailTemplates";
 
 describe("Email Templates", () => {
@@ -75,6 +76,23 @@ describe("Email Templates", () => {
 
       expect(html).toContain(`src="${dummyLogoUrl}"`);
       expect(html).toContain(`href="${dummyBaseUrl}"`);
+    });
+  });
+
+  describe("Verification Email (getVerificationEmailHtml)", () => {
+    it("should generate HTML without emojis and exclamations", () => {
+      const html = getVerificationEmailHtml(dummyLogoUrl, dummyVotingUrl);
+
+      expect(html).not.toMatch(emojiRegex);
+      expect(html).not.toContain("!");
+      expect(html).not.toContain("¡");
+    });
+
+    it("should contain absolute logo and link to verification URL", () => {
+      const html = getVerificationEmailHtml(dummyLogoUrl, dummyVotingUrl);
+
+      expect(html).toContain(`src="${dummyLogoUrl}"`);
+      expect(html).toContain(`href="${dummyVotingUrl}"`);
     });
   });
 });
