@@ -75,7 +75,15 @@ export default function DashboardClient() {
   };
 
   const pastEvents = allEvents.filter((ev) => isPastEvent(ev.fecha_elegida, ev.estado));
-  const futureEvents = allEvents.filter((ev) => !isPastEvent(ev.fecha_elegida, ev.estado) && ev.estado !== "empate");
+  const futureEvents = allEvents.filter((ev) => {
+    if (isPastEvent(ev.fecha_elegida, ev.estado)) return false;
+    if (ev.estado === "empate") return false;
+    if (ev.estado === "abierto") {
+      const isPending = ev.votantes_pendientes?.includes(user?.email || "");
+      return !isPending;
+    }
+    return true;
+  });
   const tiedEvents = allEvents.filter((ev) => ev.creador_uid === user?.uid && ev.estado === "empate");
 
   if (loadingData) {

@@ -80,12 +80,12 @@ export default function PendingVotesCard({
             {pendingVotes.map((ev) => (
               <div
                 key={ev.id}
-                className="flex items-center justify-between rounded-lg border border-zinc-800/80 bg-zinc-950/30 p-4 hover:border-zinc-700 transition-colors"
+                className="flex items-center justify-between rounded-lg border border-amber-500/20 bg-amber-500/5 p-4 hover:border-amber-500/30 transition-colors"
               >
                 <div className="space-y-0.5">
-                  <h4 className="text-sm font-bold text-zinc-200">Tienes una votación pendiente</h4>
+                  <h4 className="text-sm font-bold text-amber-200">Tienes una votación pendiente</h4>
                   <p className="text-[11px] text-zinc-400">
-                    Fecha límite para votar: <span className="text-indigo-400 font-medium">{ev.fecha_tope}</span>
+                    Fecha límite para votar: <span className="text-amber-400 font-semibold">{ev.fecha_tope}</span>
                   </p>
                 </div>
                 <Link
@@ -94,7 +94,7 @@ export default function PendingVotesCard({
                     variant: "ghost",
                     size: "sm",
                     className:
-                      "text-indigo-400 hover:text-indigo-300 hover:bg-indigo-950/30 font-medium flex items-center gap-1.5 cursor-pointer text-xs",
+                      "text-amber-400 hover:text-amber-300 hover:bg-amber-950/40 font-medium flex items-center gap-1.5 cursor-pointer text-xs border border-amber-500/20 bg-amber-950/20",
                   })}
                 >
                   Votar
