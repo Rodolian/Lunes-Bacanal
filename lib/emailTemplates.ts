@@ -115,10 +115,34 @@ export function getWinnerEmailHtml(
   logoUrl: string,
   winnerDateStr: string,
   attendees: { nombre: string; photoURL: string | null }[]
-): string {
-  const getAvatarHtml = (photoURL: string | null, name: string) => {
-    if (photoURL && !photoURL.startsWith("data:")) {
-      return `<img src="${photoURL}" width="30" height="30" style="border-radius: 50%; object-fit: cover; display: block;" alt="avatar" />`;
+): {
+  html: string;
+  attachments: { filename: string; content: Buffer; cid: string }[];
+} {
+  const attachments: { filename: string; content: Buffer; cid: string }[] = [];
+
+  const getAvatarHtml = (photoURL: string | null, name: string, index: number) => {
+    if (photoURL) {
+      if (photoURL.startsWith("data:image/")) {
+        const commaIndex = photoURL.indexOf(",");
+        if (commaIndex !== -1) {
+          const base64Data = photoURL.slice(commaIndex + 1);
+          let ext = "png";
+          const match = photoURL.slice(0, commaIndex).match(/data:image\/([a-zA-Z+]+);base64/);
+          if (match && match[1]) {
+            ext = match[1];
+          }
+          const cid = `avatar_${index}`;
+          attachments.push({
+            filename: `avatar_${index}.${ext}`,
+            content: Buffer.from(base64Data, "base64"),
+            cid: cid,
+          });
+          return `<img src="cid:${cid}" width="30" height="30" style="border-radius: 50%; object-fit: cover; display: block;" alt="avatar" />`;
+        }
+      } else if (photoURL.startsWith("http")) {
+        return `<img src="${photoURL}" width="30" height="30" style="border-radius: 50%; object-fit: cover; display: block;" alt="avatar" />`;
+      }
     }
     const initials = name.substring(0, 2).toUpperCase();
     return `<div style="width: 30px; height: 30px; border-radius: 50%; background-color: #4f46e5; color: #ffffff; text-align: center; line-height: 30px; font-size: 11px; font-weight: bold; display: block;">${initials}</div>`;
@@ -126,10 +150,10 @@ export function getWinnerEmailHtml(
 
   const tableRows = attendees
     .map(
-      (att) => `
+      (att, idx) => `
       <tr style="border-bottom: 1px solid #1e293b;">
         <td style="padding: 8px 0; width: 40px; vertical-align: middle;">
-          ${getAvatarHtml(att.photoURL, att.nombre)}
+          ${getAvatarHtml(att.photoURL, att.nombre, idx)}
         </td>
         <td style="padding: 8px 0; vertical-align: middle; font-size: 14px; color: #cbd5e1; font-weight: 500;">
           ${att.nombre}
@@ -142,7 +166,7 @@ export function getWinnerEmailHtml(
   const calendarPartStr = generateCalendarHtml(winnerDateStr);
   const formatted = formatVoteDate(winnerDateStr);
 
-  return `
+  const html = `
     <div style="background-color: #020617; color: #f8fafc; padding: 32px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; border-radius: 12px; max-width: 600px; margin: 0 auto; border: 1px solid #1e293b;">
       <div style="text-align: center; margin-bottom: 24px;">
         <img src="${logoUrl}" alt="Lunes Bacanal" style="width: 48px; height: 48px; border-radius: 12px; display: inline-block; object-fit: cover;" />
@@ -190,9 +214,10 @@ export function getWinnerEmailHtml(
         <p style="font-size: 11px; color: #475569; margin: 0; line-height: 1.5;">
           Este correo fue enviado a todos los miembros registrados de Lunes de Bacanal.
         </p>
-      </div>
     </div>
   `;
+
+  return { html, attachments };
 }
 
 /**

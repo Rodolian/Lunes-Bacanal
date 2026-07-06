@@ -35,7 +35,7 @@ const dummyAttendees = [
 ];
 // Lunes 13 de Julio de 2026
 const winnerDate = "2026-07-13";
-const winnerHtml = getWinnerEmailHtml(dummyBaseUrl, dummyLogoUrl, winnerDate, dummyAttendees);
+const { html: winnerHtml } = getWinnerEmailHtml(dummyBaseUrl, dummyLogoUrl, winnerDate, dummyAttendees);
 fs.writeFileSync(path.join(PREVIEWS_DIR, "bacanal-confirmada.html"), winnerHtml, "utf-8");
 
 // 3. Email de Empate (Enviado al Organizador)

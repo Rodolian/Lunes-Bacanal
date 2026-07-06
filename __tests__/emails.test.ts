@@ -39,7 +39,7 @@ describe("Email Templates", () => {
     const winnerDate = "2026-07-13";
 
     it("should generate HTML without emojis and exclamations", () => {
-      const html = getWinnerEmailHtml(dummyBaseUrl, dummyLogoUrl, winnerDate, dummyAttendees);
+      const { html } = getWinnerEmailHtml(dummyBaseUrl, dummyLogoUrl, winnerDate, dummyAttendees);
 
       expect(html).not.toMatch(emojiRegex);
       expect(html).not.toContain("!");
@@ -47,14 +47,14 @@ describe("Email Templates", () => {
     });
 
     it("should contain the absolute logo and winner date details", () => {
-      const html = getWinnerEmailHtml(dummyBaseUrl, dummyLogoUrl, winnerDate, dummyAttendees);
+      const { html } = getWinnerEmailHtml(dummyBaseUrl, dummyLogoUrl, winnerDate, dummyAttendees);
 
       expect(html).toContain(`src="${dummyLogoUrl}"`);
       expect(html).toContain("Lunes 13"); // Colloquial date
     });
 
     it("should list attendees names", () => {
-      const html = getWinnerEmailHtml(dummyBaseUrl, dummyLogoUrl, winnerDate, dummyAttendees);
+      const { html } = getWinnerEmailHtml(dummyBaseUrl, dummyLogoUrl, winnerDate, dummyAttendees);
 
       expect(html).toContain("Adrián Rodero");
       expect(html).toContain("Carlos Gómez");

@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
     const logoUrl = `${baseUrl}/logo.jpg`;
 
     // Generar HTML de correo
-    const emailHtml = getWinnerEmailHtml(
+    const { html: emailHtml, attachments } = getWinnerEmailHtml(
       baseUrl,
       logoUrl,
       fecha_elegida,
@@ -111,6 +111,7 @@ export async function POST(req: NextRequest) {
         bcc: allEmails,
         subject: `Bacanal confirmada: ${fecha_elegida}`,
         html: emailHtml,
+        attachments,
       });
     }
 

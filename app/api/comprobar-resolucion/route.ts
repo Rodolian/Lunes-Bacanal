@@ -109,7 +109,7 @@ export async function POST(req: NextRequest) {
 
         confirmedAttendees.sort((a, b) => a.nombre.localeCompare(b.nombre));
 
-        const emailHtml = getWinnerEmailHtml(
+        const { html: emailHtml, attachments } = getWinnerEmailHtml(
           baseUrl,
           logoUrl,
           winner,
@@ -127,6 +127,7 @@ export async function POST(req: NextRequest) {
             bcc: allEmails,
             subject: `Bacanal confirmada: ${winner}`,
             html: emailHtml,
+            attachments,
           });
         }
       } else {
