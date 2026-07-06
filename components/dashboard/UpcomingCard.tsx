@@ -21,6 +21,29 @@ const formatVoteDate = (dateStr: string) => {
 export default function UpcomingCard({ futureEvents }: UpcomingCardProps) {
   const upcomingEvents = futureEvents;
 
+  const getEventStats = (event: Event) => {
+    const propuestas = event.fechas_propuestas || [];
+    const countMap: Record<string, number> = {};
+    propuestas.forEach((f) => {
+      countMap[f] = 0;
+    });
+
+    let totalValidos = 0;
+    if (event.votos) {
+      event.votos.forEach((voto) => {
+        if (voto.email === event.creador_email) return;
+        totalValidos++;
+        voto.fechas_elegidas.forEach((f) => {
+          if (f in countMap) {
+            countMap[f]++;
+          }
+        });
+      });
+    }
+
+    return { countMap, totalValidos };
+  };
+
   return (
     <Card className="md:col-span-1 border-zinc-800 bg-zinc-900/50 backdrop-blur-sm">
       <CardHeader className="flex flex-row items-center gap-2 border-b border-zinc-900/50 pb-4">
@@ -71,6 +94,38 @@ export default function UpcomingCard({ futureEvents }: UpcomingCardProps) {
                       : "Esperando votos..."}
                   </p>
                 </div>
+
+                {/* Progress bars for voting details */}
+                {ev.estado === "abierto" && (
+                  <div className="pt-2 border-t border-zinc-800/60 space-y-2">
+                    <p className="text-[9px] text-zinc-500 uppercase tracking-wider font-semibold">
+                      Progreso de votos
+                    </p>
+                    {(() => {
+                      const { countMap, totalValidos } = getEventStats(ev);
+                      return (ev.fechas_propuestas || []).map((fecha) => {
+                        const count = countMap[fecha] || 0;
+                        const pct = totalValidos > 0 ? (count / totalValidos) * 100 : 0;
+                        return (
+                          <div key={fecha} className="grid grid-cols-[70px_1fr_45px] items-center gap-2 text-[10px]">
+                            <span className="text-zinc-400 font-medium whitespace-nowrap overflow-hidden text-ellipsis">
+                              {formatVoteDate(fecha)}
+                            </span>
+                            <div className="h-1.5 w-full rounded-full bg-zinc-950/60 border border-zinc-800/40 overflow-hidden">
+                              <div
+                                style={{ width: `${pct}%` }}
+                                className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-cyan-400 transition-all duration-500"
+                              />
+                            </div>
+                            <span className="font-bold text-zinc-300 text-right whitespace-nowrap">
+                              {count} {count === 1 ? "voto" : "votos"}
+                            </span>
+                          </div>
+                        );
+                      });
+                    })()}
+                  </div>
+                )}
 
                 <div className="pt-2 border-t border-zinc-800 space-y-1 text-xs text-zinc-400">
                   {ev.estado === "abierto" && ev.fecha_tope && (
