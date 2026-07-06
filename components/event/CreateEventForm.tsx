@@ -45,6 +45,7 @@ export default function CreateEventForm() {
         inline: true, // Render inline always open
         dateFormat: "Y-m-d",
         locale: Spanish,
+        minDate: "today",
         onDayCreate: (dObj, d, fp, dayElem) => {
           if (dayElem.dateObj && dayElem.dateObj.getDay() === 1) {
             dayElem.classList.add("is-monday");
@@ -67,6 +68,7 @@ export default function CreateEventForm() {
         mode: "single",
         dateFormat: "Y-m-d",
         locale: Spanish,
+        minDate: "today",
         onChange: (selectedDates) => {
           if (selectedDates.length > 0) {
             const date = selectedDates[0];
