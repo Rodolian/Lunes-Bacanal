@@ -117,7 +117,7 @@ export function getWinnerEmailHtml(
   attendees: { nombre: string; photoURL: string | null }[]
 ): string {
   const getAvatarHtml = (photoURL: string | null, name: string) => {
-    if (photoURL) {
+    if (photoURL && !photoURL.startsWith("data:")) {
       return `<img src="${photoURL}" width="30" height="30" style="border-radius: 50%; object-fit: cover; display: block;" alt="avatar" />`;
     }
     const initials = name.substring(0, 2).toUpperCase();
