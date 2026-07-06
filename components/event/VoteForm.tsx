@@ -311,15 +311,7 @@ export default function VoteForm({ eventId }: VoteFormProps) {
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-4 border-b border-zinc-800 pb-6">
-          <div className="space-y-1">
-            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
-              Motivo de la Bacanal
-            </span>
-            <p className="text-base font-bold text-white leading-tight">
-              {evento.motivo || "No especificado"}
-            </p>
-          </div>
+        <div className="border-b border-zinc-800 pb-6 text-center">
           <div className="space-y-1">
             <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
               Fecha Límite para Votar
