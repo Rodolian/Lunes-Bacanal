@@ -109,11 +109,13 @@ export async function POST(req: NextRequest) {
 
         confirmedAttendees.sort((a, b) => a.nombre.localeCompare(b.nombre));
 
+        const winnerTipo = ev.opciones_tipo?.[winner] || "cena";
         const { html: emailHtml, attachments } = getWinnerEmailHtml(
           baseUrl,
           logoUrl,
           winner,
-          confirmedAttendees
+          confirmedAttendees,
+          winnerTipo
         );
 
         const allEmails = usersList

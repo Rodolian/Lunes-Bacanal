@@ -75,8 +75,39 @@ export function generateCalendarHtml(winnerDateStr: string): string {
 export function getNewEventEmailHtml(
   baseUrl: string,
   logoUrl: string,
-  votingUrl: string
+  votingUrl: string,
+  fechasPropuestas?: string[],
+  opcionesTipo?: Record<string, "almuerzo" | "cena">
 ): string {
+  const fechasListHtml = fechasPropuestas && fechasPropuestas.length > 0
+    ? `
+      <div style="margin: 20px 0; padding: 16px; background-color: #020617; border: 1px solid #1e293b; border-radius: 6px;">
+        <h3 style="color: #ffffff; font-size: 13px; font-weight: bold; margin-top: 0; margin-bottom: 12px; text-transform: uppercase; text-align: center;">
+          Fechas y Horarios Propuestos
+        </h3>
+        <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+          <tbody>
+            ${fechasPropuestas
+              .map((f) => {
+                const tipo = opcionesTipo?.[f] || "cena";
+                return `
+                  <tr style="border-bottom: 1px solid #1e293b;">
+                    <td style="padding: 8px 0; color: #cbd5e1; font-weight: 500;">
+                      ${formatVoteDate(f)}
+                    </td>
+                    <td style="padding: 8px 0; text-align: right; color: #6366f1; font-weight: bold;">
+                      ${tipo === "almuerzo" ? "Almuerzo" : "Cena"}
+                    </td>
+                  </tr>
+                `;
+              })
+              .join("")}
+          </tbody>
+        </table>
+      </div>
+    `
+    : "";
+
   return `
     <div style="background-color: #020617; color: #f8fafc; padding: 32px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; border-radius: 12px; max-width: 600px; margin: 0 auto; border: 1px solid #1e293b;">
       <div style="text-align: center; margin-bottom: 24px;">
@@ -87,10 +118,11 @@ export function getNewEventEmailHtml(
       </div>
       
       <div style="background-color: #0f172a; border: 1px solid #1e293b; border-radius: 8px; padding: 24px; margin-bottom: 24px;">
-        <p style="font-size: 16px; line-height: 1.6; color: #e2e8f0; margin-top: 0; margin-bottom: 24px; text-align: center;">
+        <p style="font-size: 16px; line-height: 1.6; color: #e2e8f0; margin-top: 0; margin-bottom: 16px; text-align: center;">
           Alguien ha convocado un Lunes de Bacanal. Vota qué día te viene bien antes de la fecha límite.
         </p>
-        <div style="text-align: center;">
+        ${fechasListHtml}
+        <div style="text-align: center; margin-top: 24px;">
           <a href="${votingUrl}" style="background-color: #4f46e5; color: #ffffff; padding: 12px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 14px; display: inline-block; transition: background-color 0.2s;">
             Votar Fechas
           </a>
@@ -114,7 +146,8 @@ export function getWinnerEmailHtml(
   baseUrl: string,
   logoUrl: string,
   winnerDateStr: string,
-  attendees: { nombre: string; photoURL: string | null }[]
+  attendees: { nombre: string; photoURL: string | null }[],
+  tipo: "almuerzo" | "cena" = "cena"
 ): {
   html: string;
   attachments: { filename: string; content: Buffer; cid: string }[];
@@ -182,11 +215,11 @@ export function getWinnerEmailHtml(
         
         <div style="margin: 16px 0; padding: 16px; background-color: #020617; border: 1px solid #1e293b; border-radius: 6px; font-size: 14px; line-height: 1.6; text-align: center;">
           <p style="color: #e2e8f0; font-size: 15px; margin: 0 0 16px 0;">
-            Votación cerrada. Fecha definitiva: ${formatted}.
+            Votación cerrada. Fecha definitiva: ${formatted} (${tipo === "almuerzo" ? "Almuerzo" : "Cena"}).
           </p>
           ${calendarPartStr}
           <div style="margin-top: 16px;">
-            <a href="https://calendar.google.com/calendar/render?action=TEMPLATE&text=Lunes+de+Bacanal&dates=${winnerDateStr.replace(/-/g, "")}T200000/${winnerDateStr.replace(/-/g, "")}T235959&details=Reunion+Lunes+de+Bacanal." target="_blank" style="background-color: #fbbf24; color: #020617; padding: 8px 20px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 12px; display: inline-block;">
+            <a href="https://calendar.google.com/calendar/render?action=TEMPLATE&text=Lunes+de+Bacanal&dates=${winnerDateStr.replace(/-/g, "")}${tipo === "almuerzo" ? "T133000" : "T213000"}/${winnerDateStr.replace(/-/g, "")}${tipo === "almuerzo" ? "T153000" : "T233000"}&details=Reunion+Lunes+de+Bacanal." target="_blank" style="background-color: #fbbf24; color: #020617; padding: 8px 20px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 12px; display: inline-block;">
               Añadir a Google Calendar
             </a>
           </div>

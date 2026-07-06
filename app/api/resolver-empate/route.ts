@@ -36,6 +36,7 @@ export async function POST(req: NextRequest) {
       creador_uid?: string;
       creador_email?: string;
       votos?: VotoDoc[];
+      opciones_tipo?: Record<string, "almuerzo" | "cena">;
     }
 
     const ev = { id: eventDocSnap.id, ...eventDocSnap.data() } as EventoDoc;
@@ -79,12 +80,14 @@ export async function POST(req: NextRequest) {
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || origin || "http://localhost:3000";
     const logoUrl = `${baseUrl}/logo.jpg`;
 
+    const winnerTipo = ev.opciones_tipo?.[fecha_elegida] || "cena";
     // Generar HTML de correo
     const { html: emailHtml, attachments } = getWinnerEmailHtml(
       baseUrl,
       logoUrl,
       fecha_elegida,
-      confirmedAttendees
+      confirmedAttendees,
+      winnerTipo
     );
 
     // 5. Enviar usando Nodemailer

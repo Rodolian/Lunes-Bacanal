@@ -16,6 +16,7 @@ export interface Event {
   votos?: Vote[];
   estado?: string; // 'abierto' | 'cerrado' | 'empate'
   fechas_empatadas?: string[];
+  opciones_tipo?: Record<string, "almuerzo" | "cena">;
 }
 
 export interface UserProfile {

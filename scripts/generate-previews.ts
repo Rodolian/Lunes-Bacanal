@@ -23,7 +23,19 @@ const dummyVerificationLink = "https://lunes-bacanal.firebaseapp.com/__/auth/act
 console.log("Generando vistas previas de notificaciones...");
 
 // 1. Email de Nueva Convocatoria
-const newEventHtml = getNewEventEmailHtml(dummyBaseUrl, dummyLogoUrl, dummyVotingUrl);
+const dummyProposals = ["2026-07-13", "2026-07-20", "2026-07-27"];
+const dummyOpcionesTipo: Record<string, "almuerzo" | "cena"> = {
+  "2026-07-13": "cena",
+  "2026-07-20": "almuerzo",
+  "2026-07-27": "cena"
+};
+const newEventHtml = getNewEventEmailHtml(
+  dummyBaseUrl,
+  dummyLogoUrl,
+  dummyVotingUrl,
+  dummyProposals,
+  dummyOpcionesTipo
+);
 fs.writeFileSync(path.join(PREVIEWS_DIR, "nueva-bacanal.html"), newEventHtml, "utf-8");
 
 // 2. Email de Bacanal Confirmada
@@ -35,7 +47,7 @@ const dummyAttendees = [
 ];
 // Lunes 13 de Julio de 2026
 const winnerDate = "2026-07-13";
-const { html: winnerHtml } = getWinnerEmailHtml(dummyBaseUrl, dummyLogoUrl, winnerDate, dummyAttendees);
+const { html: winnerHtml } = getWinnerEmailHtml(dummyBaseUrl, dummyLogoUrl, winnerDate, dummyAttendees, "almuerzo");
 fs.writeFileSync(path.join(PREVIEWS_DIR, "bacanal-confirmada.html"), winnerHtml, "utf-8");
 
 // 3. Email de Empate (Enviado al Organizador)

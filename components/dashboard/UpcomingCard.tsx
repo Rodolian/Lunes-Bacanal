@@ -90,7 +90,7 @@ export default function UpcomingCard({ futureEvents }: UpcomingCardProps) {
                     )}
                   >
                     {ev.estado === "cerrado" && ev.fecha_elegida
-                      ? formatVoteDate(ev.fecha_elegida)
+                      ? `${formatVoteDate(ev.fecha_elegida)} (${(ev.opciones_tipo?.[ev.fecha_elegida] || "cena") === "almuerzo" ? "Almuerzo" : "Cena"})`
                       : "Esperando votos..."}
                   </p>
                 </div>
@@ -106,10 +106,11 @@ export default function UpcomingCard({ futureEvents }: UpcomingCardProps) {
                       return (ev.fechas_propuestas || []).map((fecha) => {
                         const count = countMap[fecha] || 0;
                         const pct = totalValidos > 0 ? (count / totalValidos) * 100 : 0;
+                        const tipo = ev.opciones_tipo?.[fecha] || "cena";
                         return (
-                          <div key={fecha} className="grid grid-cols-[70px_1fr_45px] items-center gap-2 text-[10px]">
-                            <span className="text-zinc-400 font-medium whitespace-nowrap overflow-hidden text-ellipsis">
-                              {formatVoteDate(fecha)}
+                          <div key={fecha} className="grid grid-cols-[135px_1fr_45px] items-center gap-2 text-[10px]">
+                            <span className="text-zinc-400 font-medium whitespace-nowrap overflow-hidden text-ellipsis" title={`${formatVoteDate(fecha)} (${tipo === "almuerzo" ? "Almuerzo" : "Cena"})`}>
+                              {formatVoteDate(fecha)} ({tipo === "almuerzo" ? "Alm." : "Cena"})
                             </span>
                             <div className="h-1.5 w-full rounded-full bg-zinc-950/60 border border-zinc-800/40 overflow-hidden">
                               <div

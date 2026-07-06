@@ -6,7 +6,7 @@ import { getNewEventEmailHtml } from "@/lib/emailTemplates";
 
 export async function POST(req: NextRequest) {
   try {
-    const { eventoId, votantes } = await req.json();
+    const { eventoId, votantes, fechasPropuestas, opcionesTipo } = await req.json();
 
     if (!eventoId || !votantes || !Array.isArray(votantes) || votantes.length === 0) {
       return NextResponse.json(
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
       },
     } as SMTPTransport.Options);
 
-    const emailHtml = getNewEventEmailHtml(baseUrl, logoUrl, votingUrl);
+    const emailHtml = getNewEventEmailHtml(baseUrl, logoUrl, votingUrl, fechasPropuestas, opcionesTipo);
 
     // Send email using Nodemailer
     const mailOptions = {

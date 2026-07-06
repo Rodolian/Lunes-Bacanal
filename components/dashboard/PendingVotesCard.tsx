@@ -4,6 +4,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { buttonVariants } from "@/components/ui/button";
 import { BellRing, ArrowRight } from "lucide-react";
 import { Event } from "@/services/types";
+import { formatVoteDate } from "@/lib/dateUtils";
 
 interface PendingVotesCardProps {
   pendingVotes: Event[];
@@ -57,6 +58,8 @@ export default function PendingVotesCard({
                 <div className="flex flex-wrap gap-2 pt-1">
                   {ev.fechas_empatadas?.map((fecha) => {
                     const isResolving = resolvingId === `${ev.id}-${fecha}`;
+                    const tipo = ev.opciones_tipo?.[fecha] || "cena";
+                    const formatted = `${formatVoteDate(fecha)} (${tipo === "almuerzo" ? "Almuerzo" : "Cena"})`;
                     return (
                       <button
                         key={fecha}
@@ -64,7 +67,7 @@ export default function PendingVotesCard({
                         disabled={resolvingId !== null}
                         className="rounded bg-red-950/60 hover:bg-red-900 border border-red-800 text-xs font-semibold px-3 py-1.5 text-red-200 cursor-pointer disabled:opacity-50 transition-colors"
                       >
-                        {isResolving ? "Resolviendo..." : fecha}
+                        {isResolving ? "Resolviendo..." : formatted}
                       </button>
                     );
                   })}

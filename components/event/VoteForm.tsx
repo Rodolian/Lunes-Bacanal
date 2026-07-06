@@ -11,11 +11,6 @@ import "flatpickr/dist/themes/dark.css";
 import Link from "next/link";
 import { formatVoteDate } from "@/lib/dateUtils";
 
-interface FlatpickrInstance {
-  destroy: () => void;
-  setDate: (dates: string | Date | string[] | Date[], triggerChange?: boolean) => void;
-}
-
 interface VoteFormProps {
   eventId: string;
 }
@@ -31,7 +26,7 @@ export default function VoteForm({ eventId }: VoteFormProps) {
   const [error, setError] = useState<string | null>(null);
 
   const calendarRef = useRef<HTMLInputElement>(null);
-  const fpInstanceRef = useRef<FlatpickrInstance | null>(null);
+  const fpInstanceRef = useRef<flatpickr.Instance | null>(null);
 
   useEffect(() => {
     if (!eventId) {
@@ -271,6 +266,11 @@ export default function VoteForm({ eventId }: VoteFormProps) {
     );
   }
 
+  const getTipoLabel = (fecha: string) => {
+    const tipo = evento?.opciones_tipo?.[fecha] || "cena";
+    return tipo === "almuerzo" ? "Almuerzo" : "Cena";
+  };
+
   return (
     <div className="space-y-6">
       <style
@@ -341,7 +341,7 @@ export default function VoteForm({ eventId }: VoteFormProps) {
                 Esta bacanal solo tiene una fecha propuesta:
               </p>
               <p className="text-2xl font-extrabold text-indigo-400">
-                {formatVoteDate(singleDate)}
+                {formatVoteDate(singleDate)} ({getTipoLabel(singleDate)})
               </p>
               <p className="text-xs text-zinc-400">
                 ¿Confirmas tu asistencia para este día?
@@ -370,7 +370,7 @@ export default function VoteForm({ eventId }: VoteFormProps) {
                         onChange={() => handleCheckboxChange(fecha)}
                         className="h-4 w-4 rounded border-zinc-800 bg-zinc-950 text-emerald-600 focus:ring-emerald-500 outline-none"
                       />
-                      <span>{fecha}</span>
+                      <span>{formatVoteDate(fecha)} ({getTipoLabel(fecha)})</span>
                     </div>
                   </label>
                 ))}
