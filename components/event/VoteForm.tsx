@@ -129,7 +129,11 @@ export default function VoteForm({ eventId }: VoteFormProps) {
       fetch("/api/comprobar-resolucion", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ eventoId: eventId }),
+        body: JSON.stringify({
+          eventoId: eventId,
+          voterEmail: user.email,
+          selectedDates: selectedDates,
+        }),
       }).catch((err) => console.error("Resolution check failed (non-blocking):", err));
 
       router.push("/");
@@ -163,7 +167,11 @@ export default function VoteForm({ eventId }: VoteFormProps) {
       fetch("/api/comprobar-resolucion", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ eventoId: eventId }),
+        body: JSON.stringify({
+          eventoId: eventId,
+          voterEmail: user.email,
+          selectedDates: [],
+        }),
       }).catch((err) => console.error("Resolution check failed (non-blocking):", err));
 
       router.push("/");
@@ -196,7 +204,11 @@ export default function VoteForm({ eventId }: VoteFormProps) {
       fetch("/api/comprobar-resolucion", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ eventoId: eventId }),
+        body: JSON.stringify({
+          eventoId: eventId,
+          voterEmail: user.email,
+          selectedDates: dates,
+        }),
       }).catch((err) => console.error("Resolution check failed (non-blocking):", err));
 
       router.push("/");

@@ -19,7 +19,7 @@ interface UsuarioDoc {
 
 export async function POST(req: NextRequest) {
   try {
-    const { eventoId } = await req.json();
+    const { eventoId, voterEmail, selectedDates } = await req.json();
 
     if (!eventoId) {
       return NextResponse.json({ error: "Falta eventoId." }, { status: 400 });
@@ -34,6 +34,18 @@ export async function POST(req: NextRequest) {
     }
 
     const ev = eventDocSnap.data() as Event;
+
+    // Corrección en memoria para evitar condiciones de carrera por retraso de replicación en Firestore
+    if (voterEmail) {
+      if (!ev.votos) ev.votos = [];
+      const yaVoto = ev.votos.some((v) => v.email === voterEmail);
+      if (!yaVoto && selectedDates !== undefined) {
+        ev.votos.push({ email: voterEmail, fechas_elegidas: selectedDates });
+      }
+      if (ev.votantes_pendientes) {
+        ev.votantes_pendientes = ev.votantes_pendientes.filter((email) => email !== voterEmail);
+      }
+    }
 
     // 2. Solo resolver si pendientes está vacío y el evento está activo
     if (
