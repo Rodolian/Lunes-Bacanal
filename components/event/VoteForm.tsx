@@ -9,6 +9,7 @@ import flatpickr from "flatpickr";
 import { Spanish } from "flatpickr/dist/l10n/es.js";
 import "flatpickr/dist/themes/dark.css";
 import Link from "next/link";
+import { formatVoteDate } from "@/lib/dateUtils";
 
 interface FlatpickrInstance {
   destroy: () => void;
@@ -41,6 +42,9 @@ export default function VoteForm({ eventId }: VoteFormProps) {
     const unsubscribe = subscribeToEvent(eventId, (eventData) => {
       if (eventData) {
         setEvento(eventData);
+        if (eventData.fechas_propuestas?.length === 1) {
+          setSelectedDates([eventData.fechas_propuestas[0]]);
+        }
       } else {
         setError("El evento solicitado no existe.");
       }
@@ -171,6 +175,39 @@ export default function VoteForm({ eventId }: VoteFormProps) {
     }
   };
 
+  const isSingleOption = evento?.fechas_propuestas?.length === 1;
+  const singleDate = isSingleOption ? (evento?.fechas_propuestas?.[0] || "") : "";
+
+  const handleSingleChoice = async (attend: boolean) => {
+    setError(null);
+
+    if (!user?.email) {
+      setError("Debes estar autenticado para votar.");
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      const dates = attend && singleDate ? [singleDate] : [];
+      await submitVote(eventId, user.email, dates);
+
+      // Llamar al backend para comprobar la resolución
+      fetch("/api/comprobar-resolucion", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ eventoId: eventId }),
+      }).catch((err) => console.error("Resolution check failed (non-blocking):", err));
+
+      router.push("/");
+    } catch (err: unknown) {
+      console.error("Error submitting single choice vote:", err);
+      const msg = err instanceof Error ? err.message : "Error al registrar tu voto. Inténtalo de nuevo.";
+      setError(msg);
+      setSubmitting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-[300px] items-center justify-center text-zinc-100">
@@ -294,40 +331,48 @@ export default function VoteForm({ eventId }: VoteFormProps) {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-3">
-            <label className="block text-sm font-semibold text-zinc-300">
-              Selecciona las fechas que te convengan:
-            </label>
-
-            <div className="space-y-2">
-              {evento.fechas_propuestas?.map((fecha) => (
-                <label
-                  key={fecha}
-                  className={`flex items-center justify-between rounded-lg border p-4 cursor-pointer transition-all select-none ${
-                    selectedDates.includes(fecha)
-                      ? "border-emerald-500/30 bg-emerald-500/5 text-white font-medium"
-                      : "border-zinc-850 bg-zinc-950/40 text-zinc-300 hover:border-zinc-700"
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="checkbox"
-                      checked={selectedDates.includes(fecha)}
-                      onChange={() => handleCheckboxChange(fecha)}
-                      className="h-4 w-4 rounded border-zinc-800 bg-zinc-950 text-emerald-600 focus:ring-emerald-500 outline-none"
-                    />
-                    <span>{fecha}</span>
-                  </div>
-
-                  {new Date(fecha).getDay() === 0 && (
-                    <span className="rounded bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-400">
-                      Lunes
-                    </span>
-                  )}
-                </label>
-              ))}
+          {isSingleOption ? (
+            <div className="rounded-xl border border-zinc-800 bg-zinc-950/40 p-6 text-center space-y-4">
+              <p className="text-sm text-zinc-400">
+                Esta bacanal solo tiene una fecha propuesta:
+              </p>
+              <p className="text-2xl font-extrabold text-indigo-400">
+                {formatVoteDate(singleDate)}
+              </p>
+              <p className="text-xs text-zinc-400">
+                ¿Confirmas tu asistencia para este día?
+              </p>
             </div>
-          </div>
+          ) : (
+            <div className="space-y-3">
+              <label className="block text-sm font-semibold text-zinc-300">
+                Selecciona las fechas que te convengan:
+              </label>
+
+              <div className="space-y-2">
+                {evento.fechas_propuestas?.map((fecha) => (
+                  <label
+                    key={fecha}
+                    className={`flex items-center justify-between rounded-lg border p-4 cursor-pointer transition-all select-none ${
+                      selectedDates.includes(fecha)
+                        ? "border-emerald-500/30 bg-emerald-500/5 text-white font-medium"
+                        : "border-zinc-850 bg-zinc-950/40 text-zinc-300 hover:border-zinc-700"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        checked={selectedDates.includes(fecha)}
+                        onChange={() => handleCheckboxChange(fecha)}
+                        className="h-4 w-4 rounded border-zinc-800 bg-zinc-950 text-emerald-600 focus:ring-emerald-500 outline-none"
+                      />
+                      <span>{fecha}</span>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="space-y-3 pt-6 border-t border-zinc-800">
             <label className="block text-sm font-semibold text-zinc-300">
@@ -349,30 +394,62 @@ export default function VoteForm({ eventId }: VoteFormProps) {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3 pt-4">
-            <button
-              type="submit"
-              disabled={submitting}
-              className="flex flex-1 items-center justify-center rounded-lg bg-indigo-600 py-3 text-sm font-semibold text-white transition-all hover:bg-indigo-500 active:bg-indigo-700 disabled:opacity-50 shadow-lg shadow-indigo-600/20 cursor-pointer"
-            >
-              {submitting ? (
-                <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-              ) : (
-                "Enviar Votación"
-              )}
-            </button>
+            {isSingleOption ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => handleSingleChoice(true)}
+                  disabled={submitting}
+                  className="flex flex-1 items-center justify-center rounded-lg bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white py-3 text-sm font-semibold transition-all disabled:opacity-50 shadow-lg shadow-emerald-600/20 cursor-pointer"
+                >
+                  {submitting ? (
+                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                  ) : (
+                    "Asistiré"
+                  )}
+                </button>
 
-            <button
-              type="button"
-              onClick={handleBlankVote}
-              disabled={submitting}
-              className="flex flex-1 items-center justify-center rounded-lg bg-red-950/40 border border-red-800/80 hover:bg-red-900/60 active:bg-red-950 text-red-200 py-3 text-sm font-semibold transition-all disabled:opacity-50 shadow-lg cursor-pointer"
-            >
-              {submitting ? (
-                <div className="h-5 w-5 animate-spin rounded-full border-2 border-red-200 border-t-transparent"></div>
-              ) : (
-                "No puedo ningún día"
-              )}
-            </button>
+                <button
+                  type="button"
+                  onClick={() => handleSingleChoice(false)}
+                  disabled={submitting}
+                  className="flex flex-1 items-center justify-center rounded-lg bg-red-950/40 border border-red-800/80 hover:bg-red-900/60 active:bg-red-950 text-red-200 py-3 text-sm font-semibold transition-all disabled:opacity-50 shadow-lg cursor-pointer"
+                >
+                  {submitting ? (
+                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-red-200 border-t-transparent"></div>
+                  ) : (
+                    "No puedo asistir"
+                  )}
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="flex flex-1 items-center justify-center rounded-lg bg-indigo-600 py-3 text-sm font-semibold text-white transition-all hover:bg-indigo-500 active:bg-indigo-700 disabled:opacity-50 shadow-lg shadow-indigo-600/20 cursor-pointer"
+                >
+                  {submitting ? (
+                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                  ) : (
+                    "Enviar Votación"
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleBlankVote}
+                  disabled={submitting}
+                  className="flex flex-1 items-center justify-center rounded-lg bg-red-950/40 border border-red-800/80 hover:bg-red-900/60 active:bg-red-950 text-red-200 py-3 text-sm font-semibold transition-all disabled:opacity-50 shadow-lg cursor-pointer"
+                >
+                  {submitting ? (
+                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-red-200 border-t-transparent"></div>
+                  ) : (
+                    "No puedo ningún día"
+                  )}
+                </button>
+              </>
+            )}
           </div>
         </form>
       </div>

@@ -55,7 +55,7 @@ export default function UpcomingCard({ futureEvents }: UpcomingCardProps) {
                 >
                   {ev.estado === "cerrado" ? "Programado" : "En Votación"}
                 </div>
-                
+
                 <div className="space-y-1">
                   <p className="text-[10px] text-zinc-500 uppercase tracking-wider">
                     {ev.estado === "cerrado" ? "Fecha del Bacanal" : "Estado del Evento"}
@@ -76,7 +76,7 @@ export default function UpcomingCard({ futureEvents }: UpcomingCardProps) {
                   {ev.estado === "abierto" && ev.fecha_tope && (
                     <p>Cierre de votación: <span className="text-zinc-300 font-semibold">{ev.fecha_tope}</span></p>
                   )}
-                  <p>Motivo: <span className="text-zinc-300 font-semibold">{ev.motivo || "[Reservado - Secreto]"}</span></p>
+                  <p>Motivo: <span className="text-zinc-300 font-semibold">{"[Reservado - Secreto]"}</span></p>
                   {ev.estado === "abierto" && (
                     <p>Pendientes: <span className="text-zinc-300 font-semibold">{(ev.votantes_pendientes || []).length} usuarios</span></p>
                   )}
