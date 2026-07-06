@@ -2,7 +2,6 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   updateProfile,
-  sendEmailVerification,
   signOut,
   User,
 } from "firebase/auth";
@@ -36,9 +35,15 @@ export async function registerWithEmail(
     photoURL: null,
   });
 
-  // Enviar correo de verificación de forma asíncrona
-  sendEmailVerification(registeredUser).catch((err) =>
-    console.error("Error sending verification email:", err)
+  // Enviar correo de verificación de forma asíncrona desde nuestro propio SMTP
+  fetch("/api/enviar-verificacion", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ email: registeredUser.email }),
+  }).catch((err) =>
+    console.error("Error triggering verification email:", err)
   );
 
   return registeredUser;

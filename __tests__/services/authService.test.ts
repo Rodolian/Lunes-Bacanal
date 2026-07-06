@@ -3,7 +3,6 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
-  sendEmailVerification,
   updateProfile,
 } from "firebase/auth";
 import { setDoc } from "firebase/firestore";
@@ -14,7 +13,6 @@ jest.mock("firebase/auth", () => ({
   createUserWithEmailAndPassword: jest.fn(),
   signInWithEmailAndPassword: jest.fn(),
   signOut: jest.fn(),
-  sendEmailVerification: jest.fn(),
   updateProfile: jest.fn(),
 }));
 
@@ -35,10 +33,14 @@ jest.mock("@/lib/firebase", () => ({
 describe("authService", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue({ success: true }),
+    });
   });
 
   describe("registerWithEmail", () => {
-    it("should create user, update auth profile, set firestore document and send verification email", async () => {
+    it("should create user, update auth profile, set firestore document and send verification email using custom API", async () => {
       const mockUser = {
         uid: "user-123",
         email: "test@example.com",
@@ -46,7 +48,6 @@ describe("authService", () => {
       (createUserWithEmailAndPassword as jest.Mock).mockResolvedValue({
         user: mockUser,
       });
-      (sendEmailVerification as jest.Mock).mockResolvedValue(undefined);
       (updateProfile as jest.Mock).mockResolvedValue(undefined);
       (setDoc as jest.Mock).mockResolvedValue(undefined);
 
@@ -59,7 +60,13 @@ describe("authService", () => {
       );
       expect(updateProfile).toHaveBeenCalledWith(mockUser, { displayName: "Adrián" });
       expect(setDoc).toHaveBeenCalled();
-      expect(sendEmailVerification).toHaveBeenCalledWith(mockUser);
+      expect(global.fetch).toHaveBeenCalledWith(
+        "/api/enviar-verificacion",
+        expect.objectContaining({
+          method: "POST",
+          body: JSON.stringify({ email: "test@example.com" }),
+        })
+      );
     });
   });
 
