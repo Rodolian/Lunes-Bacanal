@@ -11,6 +11,7 @@ import HeroCard from "./HeroCard";
 import PendingVotesCard from "./PendingVotesCard";
 import UpcomingCard from "./UpcomingCard";
 import HistoryCard from "./HistoryCard";
+import { isPastEvent } from "@/lib/dateUtils";
 
 export default function DashboardClient() {
   const { user } = useAuth();
@@ -73,22 +74,8 @@ export default function DashboardClient() {
     }
   };
 
-  const isPastEvent = (ev: Event) => {
-    if (ev.estado !== "cerrado" || !ev.fecha_elegida) return false;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const parts = ev.fecha_elegida.split("-");
-    if (parts.length !== 3) return false;
-    const graceDate = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
-    graceDate.setHours(0, 0, 0, 0);
-    graceDate.setDate(graceDate.getDate() + 1); // 1 day grace period
-
-    return today.getTime() > graceDate.getTime();
-  };
-
-  const pastEvents = allEvents.filter((ev) => isPastEvent(ev));
-  const futureEvents = allEvents.filter((ev) => !isPastEvent(ev) && ev.estado !== "empate");
+  const pastEvents = allEvents.filter((ev) => isPastEvent(ev.fecha_elegida, ev.estado));
+  const futureEvents = allEvents.filter((ev) => !isPastEvent(ev.fecha_elegida, ev.estado) && ev.estado !== "empate");
   const tiedEvents = allEvents.filter((ev) => ev.creador_uid === user?.uid && ev.estado === "empate");
 
   if (loadingData) {

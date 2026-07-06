@@ -137,6 +137,40 @@ export default function VoteForm({ eventId }: VoteFormProps) {
     }
   };
 
+  const handleBlankVote = async () => {
+    setError(null);
+
+    if (!user?.email) {
+      setError("Debes estar autenticado para votar.");
+      return;
+    }
+
+    if (!window.confirm("¿Confirmas que no puedes asistir ningún día? Tu voto se registrará en blanco.")) {
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      // Registrar voto en blanco [] usando la capa de servicio
+      await submitVote(eventId, user.email, []);
+
+      // Llamar al backend para comprobar la resolución
+      fetch("/api/comprobar-resolucion", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ eventoId: eventId }),
+      }).catch((err) => console.error("Resolution check failed (non-blocking):", err));
+
+      router.push("/");
+    } catch (err: unknown) {
+      console.error("Error submitting blank vote:", err);
+      const msg = err instanceof Error ? err.message : "Error al registrar tu voto. Inténtalo de nuevo.";
+      setError(msg);
+      setSubmitting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-[300px] items-center justify-center text-zinc-100">
@@ -314,17 +348,32 @@ export default function VoteForm({ eventId }: VoteFormProps) {
             </p>
           </div>
 
-          <button
-            type="submit"
-            disabled={submitting}
-            className="flex w-full items-center justify-center rounded-lg bg-indigo-600 py-3 text-sm font-semibold text-white transition-all hover:bg-indigo-500 active:bg-indigo-700 disabled:opacity-50 shadow-lg shadow-indigo-600/20"
-          >
-            {submitting ? (
-              <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-            ) : (
-              "Enviar Votación"
-            )}
-          </button>
+          <div className="flex flex-col sm:flex-row gap-3 pt-4">
+            <button
+              type="submit"
+              disabled={submitting}
+              className="flex flex-1 items-center justify-center rounded-lg bg-indigo-600 py-3 text-sm font-semibold text-white transition-all hover:bg-indigo-500 active:bg-indigo-700 disabled:opacity-50 shadow-lg shadow-indigo-600/20 cursor-pointer"
+            >
+              {submitting ? (
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+              ) : (
+                "Enviar Votación"
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleBlankVote}
+              disabled={submitting}
+              className="flex flex-1 items-center justify-center rounded-lg bg-red-950/40 border border-red-800/80 hover:bg-red-900/60 active:bg-red-950 text-red-200 py-3 text-sm font-semibold transition-all disabled:opacity-50 shadow-lg cursor-pointer"
+            >
+              {submitting ? (
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-red-200 border-t-transparent"></div>
+              ) : (
+                "No puedo ningún día"
+              )}
+            </button>
+          </div>
         </form>
       </div>
     </div>
