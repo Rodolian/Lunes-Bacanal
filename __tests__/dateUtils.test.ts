@@ -4,9 +4,9 @@ describe("Date utilities", () => {
   describe("formatVoteDate", () => {
     it("should format YYYY-MM-DD into a Spanish weekday and day number", () => {
       // 2026-07-13 is a Monday
-      expect(formatVoteDate("2026-07-13")).toBe("Lunes 13");
+      expect(formatVoteDate("2026-07-13")).toBe("Lunes 13 de Julio");
       // 2026-07-14 is a Tuesday
-      expect(formatVoteDate("2026-07-14")).toBe("Martes 14");
+      expect(formatVoteDate("2026-07-14")).toBe("Martes 14 de Julio");
     });
 
     it("should fallback to original string if format is invalid", () => {

@@ -33,8 +33,13 @@ export function formatVoteDate(dateStr: string): string {
   
   const date = new Date(year, month - 1, day);
   const daysOfWeek = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+  const months = [
+    "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+    "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+  ];
   const dayName = daysOfWeek[date.getDay()];
   const dayNum = date.getDate();
+  const monthName = months[date.getMonth()];
   
-  return `${dayName} ${dayNum}`;
+  return `${dayName} ${dayNum} de ${monthName}`;
 }
