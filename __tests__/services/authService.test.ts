@@ -1,4 +1,4 @@
-import { registerWithEmail, loginWithEmail, logoutUser } from "../../services/authService";
+import { registerWithEmail, loginWithEmail, logoutUser, resetPassword } from "../../services/authService";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -93,6 +93,20 @@ describe("authService", () => {
       await logoutUser();
 
       expect(signOut).toHaveBeenCalled();
+    });
+  });
+
+  describe("resetPassword", () => {
+    it("should call /api/recuperar-password with the provided email", async () => {
+      await resetPassword("test@example.com");
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        "/api/recuperar-password",
+        expect.objectContaining({
+          method: "POST",
+          body: JSON.stringify({ email: "test@example.com" }),
+        })
+      );
     });
   });
 });

@@ -53,3 +53,24 @@ export async function logoutUser(): Promise<void> {
   if (!auth) throw new Error("Firebase Auth no está configurado.");
   await signOut(auth);
 }
+
+export async function resetPassword(email: string): Promise<void> {
+  const response = await fetch("/api/recuperar-password", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ email }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    const error = new Error(
+      errorData.error || "No se pudo enviar el correo de recuperación."
+    ) as Error & { code?: string };
+    if (errorData.code) {
+      error.code = errorData.code;
+    }
+    throw error;
+  }
+}

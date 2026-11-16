@@ -3,6 +3,7 @@ import {
   getWinnerEmailHtml,
   getTieEmailHtml,
   getVerificationEmailHtml,
+  getPasswordResetEmailHtml,
 } from "../lib/emailTemplates";
 
 describe("Email Templates", () => {
@@ -90,6 +91,23 @@ describe("Email Templates", () => {
 
     it("should contain absolute logo and link to verification URL", () => {
       const html = getVerificationEmailHtml(dummyLogoUrl, dummyVotingUrl);
+
+      expect(html).toContain(`src="${dummyLogoUrl}"`);
+      expect(html).toContain(`href="${dummyVotingUrl}"`);
+    });
+  });
+
+  describe("Password Reset Email (getPasswordResetEmailHtml)", () => {
+    it("should generate HTML without emojis and exclamations", () => {
+      const html = getPasswordResetEmailHtml(dummyLogoUrl, dummyVotingUrl);
+
+      expect(html).not.toMatch(emojiRegex);
+      expect(html).not.toContain("!");
+      expect(html).not.toContain("¡");
+    });
+
+    it("should contain absolute logo and link to password reset URL", () => {
+      const html = getPasswordResetEmailHtml(dummyLogoUrl, dummyVotingUrl);
 
       expect(html).toContain(`src="${dummyLogoUrl}"`);
       expect(html).toContain(`href="${dummyVotingUrl}"`);

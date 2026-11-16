@@ -1,14 +1,16 @@
 "use client";
 
 import React, { useState } from "react";
-import { loginWithEmail } from "@/services/authService";
+import { loginWithEmail, resetPassword } from "@/services/authService";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 export default function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isResetMode, setIsResetMode] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [resetSuccess, setResetSuccess] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const router = useRouter();
 
@@ -42,6 +44,99 @@ export default function LoginForm() {
       setSubmitting(false);
     }
   };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setResetSuccess(null);
+    setSubmitting(true);
+
+    try {
+      await resetPassword(email);
+      setResetSuccess(
+        "Te hemos enviado un correo con el enlace para restablecer tu contraseña. Revisa tu bandeja de entrada."
+      );
+    } catch (err: unknown) {
+      console.error("Password reset error:", err);
+      const msg =
+        err instanceof Error
+          ? err.message
+          : "No se pudo enviar el correo de recuperación. Inténtalo de nuevo.";
+      setError(msg);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (isResetMode) {
+    return (
+      <div className="w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-900/50 p-8 shadow-2xl backdrop-blur-xl">
+        <div className="mb-8 text-center">
+          <h1 className="text-3xl font-bold tracking-tight text-white">
+            Recuperar contraseña
+          </h1>
+          <p className="mt-2 text-sm text-zinc-400">
+            Introduce tu correo y te enviaremos un enlace para restablecerla
+          </p>
+        </div>
+
+        {error && (
+          <div className="mb-6 rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-400">
+            {error}
+          </div>
+        )}
+
+        {resetSuccess && (
+          <div className="mb-6 rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-3 text-sm text-emerald-400">
+            {resetSuccess}
+          </div>
+        )}
+
+        <form onSubmit={handleResetPassword} className="space-y-5">
+          <div>
+            <label htmlFor="reset-email" className="block text-sm font-medium text-zinc-300">
+              Correo Electrónico
+            </label>
+            <input
+              id="reset-email"
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="mt-1.5 w-full rounded-lg border border-zinc-700 bg-zinc-950 px-4 py-2.5 text-white placeholder-zinc-550 outline-none transition-all focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm"
+              placeholder="tu@ejemplo.com"
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={submitting}
+            className="flex w-full items-center justify-center rounded-lg bg-indigo-600 py-3 text-sm font-semibold text-white transition-all hover:bg-indigo-500 active:bg-indigo-700 disabled:opacity-50"
+          >
+            {submitting ? (
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+            ) : (
+              "Enviar enlace de recuperación"
+            )}
+          </button>
+        </form>
+
+        <div className="mt-6 text-center text-sm text-zinc-400">
+          <button
+            type="button"
+            onClick={() => {
+              setIsResetMode(false);
+              setError(null);
+              setResetSuccess(null);
+            }}
+            className="font-medium text-indigo-400 transition-colors hover:text-indigo-300 hover:underline"
+          >
+            Volver al inicio de sesión
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-900/50 p-8 shadow-2xl backdrop-blur-xl">
@@ -77,9 +172,22 @@ export default function LoginForm() {
         </div>
 
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-zinc-300">
-            Contraseña
-          </label>
+          <div className="flex items-center justify-between">
+            <label htmlFor="password" className="block text-sm font-medium text-zinc-300">
+              Contraseña
+            </label>
+            <button
+              type="button"
+              onClick={() => {
+                setIsResetMode(true);
+                setError(null);
+                setResetSuccess(null);
+              }}
+              className="text-xs font-medium text-indigo-400 transition-colors hover:text-indigo-300 hover:underline"
+            >
+              ¿Has olvidado tu contraseña?
+            </button>
+          </div>
           <input
             id="password"
             type="password"

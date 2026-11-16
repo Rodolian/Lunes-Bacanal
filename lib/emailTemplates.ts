@@ -319,3 +319,38 @@ export function getVerificationEmailHtml(logoUrl: string, verificationLink: stri
     </div>
   `;
 }
+
+/**
+ * Plantilla de correo para restablecer la contraseña del usuario.
+ */
+export function getPasswordResetEmailHtml(logoUrl: string, resetLink: string): string {
+  return `
+    <div style="background-color: #020617; color: #f8fafc; padding: 32px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; border-radius: 12px; max-width: 600px; margin: 0 auto; border: 1px solid #1e293b;">
+      <div style="text-align: center; margin-bottom: 24px;">
+        <img src="${logoUrl}" alt="Lunes Bacanal" style="width: 48px; height: 48px; border-radius: 12px; display: inline-block; object-fit: cover;" />
+        <h1 style="color: #ffffff; font-size: 22px; font-weight: 800; margin-top: 16px; margin-bottom: 4px; letter-spacing: -0.025em;">
+          Lunes de Bacanal
+        </h1>
+      </div>
+      
+      <div style="background-color: #0f172a; border: 1px solid #1e293b; border-radius: 8px; padding: 24px; margin-bottom: 24px;">
+        <p style="font-size: 16px; line-height: 1.6; color: #e2e8f0; margin-top: 0; margin-bottom: 24px; text-align: center;">
+          Hemos recibido una solicitud para restablecer tu contraseña. Pulsa el botón inferior para elegir una nueva.
+        </p>
+        <div style="text-align: center;">
+          <a href="${resetLink}" style="background-color: #4f46e5; color: #ffffff; padding: 12px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 14px; display: inline-block;">
+            Restablecer Contraseña
+          </a>
+        </div>
+      </div>
+      
+      <div style="border-top: 1px solid #1e293b; padding-top: 16px; text-align: center;">
+        <p style="font-size: 11px; color: #475569; margin: 0; line-height: 1.5;">
+          Si no has solicitado este cambio, puedes ignorar este correo.<br />
+          Si el botón no funciona, abre este enlace en tu navegador:<br />
+          <a href="${resetLink}" style="color: #6366f1; word-break: break-all;">${resetLink}</a>
+        </p>
+      </div>
+    </div>
+  `;
+}
