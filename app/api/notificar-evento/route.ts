@@ -25,19 +25,18 @@ export async function POST(req: NextRequest) {
 
     const emailHtml = getNewEventEmailHtml(baseUrl, logoUrl, votingUrl, fechasPropuestas, opcionesTipo);
 
-    // MODO DEPURACIÓN: enviar únicamente a adrianrodero@gmail.com
-    const debugRecipients = ["adrianrodero@gmail.com"];
-
+    // Send email using Nodemailer
     const mailOptions = {
       from: senderEmail,
-      to: debugRecipients,
+      to: senderEmail, // Send to self to satisfy SMTP rules
+      bcc: votantes,   // BCC all voters for privacy
       subject: `Nueva propuesta de Lunes de Bacanal`,
       html: emailHtml,
     };
 
     const info = await transporter.sendMail(mailOptions);
 
-    return NextResponse.json({ success: true, messageId: info.messageId, recipients: debugRecipients });
+    return NextResponse.json({ success: true, messageId: info.messageId });
   } catch (err: unknown) {
     console.error("Unexpected notification API error:", err);
     const errorMsg = err instanceof Error ? err.message : "Ocurrió un error inesperado al enviar las notificaciones.";
