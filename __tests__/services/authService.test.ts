@@ -12,6 +12,7 @@ jest.mock("firebase/auth", () => ({
   getAuth: jest.fn(),
   createUserWithEmailAndPassword: jest.fn(),
   signInWithEmailAndPassword: jest.fn(),
+  sendPasswordResetEmail: jest.fn(),
   signOut: jest.fn(),
   updateProfile: jest.fn(),
 }));

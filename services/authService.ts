@@ -1,6 +1,7 @@
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
   updateProfile,
   signOut,
   User,
@@ -65,12 +66,27 @@ export async function resetPassword(email: string): Promise<void> {
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
+
+    if (
+      errorData.code === "auth/user-not-found" ||
+      errorData.code === "auth/invalid-email"
+    ) {
+      const error = new Error(
+        errorData.error || "No se pudo enviar el correo de recuperación."
+      ) as Error & { code?: string };
+      error.code = errorData.code;
+      throw error;
+    }
+
+    // Fallback al SDK cliente de Firebase Auth si falla el endpoint del servidor
+    if (auth) {
+      await sendPasswordResetEmail(auth, email.trim());
+      return;
+    }
+
     const error = new Error(
       errorData.error || "No se pudo enviar el correo de recuperación."
     ) as Error & { code?: string };
-    if (errorData.code) {
-      error.code = errorData.code;
-    }
     throw error;
   }
 }
