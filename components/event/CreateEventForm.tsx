@@ -216,21 +216,24 @@ export default function CreateEventForm() {
       });
 
       // 3. Notificar a los invitados por correo vía API
-      try {
-        await fetch("/api/notificar-evento", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            eventoId: newEventId,
-            votantes: allEmails,
-            fechasPropuestas: fechasPropuestas,
-            opcionesTipo: opcionesTipo,
-          }),
-        });
-      } catch (notifyErr) {
-        console.error("Error triggering email notification API:", notifyErr);
+      const notifyRes = await fetch("/api/notificar-evento", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          eventoId: newEventId,
+          votantes: allEmails,
+          fechasPropuestas: fechasPropuestas,
+          opcionesTipo: opcionesTipo,
+        }),
+      });
+
+      if (!notifyRes.ok) {
+        const errData = await notifyRes.json().catch(() => ({}));
+        throw new Error(
+          `El evento se guardó, pero falló el envío de correo: ${errData.error || notifyRes.statusText}`
+        );
       }
 
       setSuccessMessage("Evento creado con éxito e invitados notificados.");

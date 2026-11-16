@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminAuth } from "@/lib/firebaseAdmin";
-import nodemailer from "nodemailer";
-import SMTPTransport from "nodemailer/lib/smtp-transport";
 import { headers } from "next/headers";
 import { getVerificationEmailHtml } from "@/lib/emailTemplates";
+import { getMailTransporter } from "@/lib/mailer";
 
 export const dynamic = "force-dynamic";
 
@@ -24,17 +23,8 @@ export async function POST(req: NextRequest) {
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || origin || "http://localhost:3000";
     const logoUrl = `${baseUrl}/logo.jpg`;
 
-    const senderEmail = process.env.EMAIL_USER;
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        type: "OAuth2",
-        user: senderEmail,
-        clientId: process.env.OAUTH_CLIENT_ID,
-        clientSecret: process.env.OAUTH_CLIENT_SECRET,
-        refreshToken: process.env.OAUTH_REFRESH_TOKEN,
-      },
-    } as SMTPTransport.Options);
+    const senderEmail = process.env.EMAIL_USER || "lunesbacanal@gmail.com";
+    const transporter = getMailTransporter();
 
     // 3. HTML del correo sin emojis y con tono seco
     const emailHtml = getVerificationEmailHtml(logoUrl, verificationLink);

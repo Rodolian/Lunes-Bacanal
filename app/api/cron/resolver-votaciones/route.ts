@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebaseAdmin";
-import nodemailer from "nodemailer";
-import SMTPTransport from "nodemailer/lib/smtp-transport";
 import { headers } from "next/headers";
 import { calculateWinner } from "@/services/resolutionService";
 import { getWinnerEmailHtml, getTieEmailHtml } from "@/lib/emailTemplates";
+import { getMailTransporter } from "@/lib/mailer";
 
 export const dynamic = "force-dynamic";
 
@@ -75,17 +74,8 @@ export async function GET(req: NextRequest) {
 
       // 5. Enviar correos de notificación
       try {
-        const senderEmail = process.env.EMAIL_USER;
-        const transporter = nodemailer.createTransport({
-          service: "gmail",
-          auth: {
-            type: "OAuth2",
-            user: senderEmail,
-            clientId: process.env.OAUTH_CLIENT_ID,
-            clientSecret: process.env.OAUTH_CLIENT_SECRET,
-            refreshToken: process.env.OAUTH_REFRESH_TOKEN,
-          },
-        } as SMTPTransport.Options);
+        const senderEmail = process.env.EMAIL_USER || "lunesbacanal@gmail.com";
+        const transporter = getMailTransporter();
 
         if (winner) {
           // --- Ganador ---

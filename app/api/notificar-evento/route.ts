@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import nodemailer from "nodemailer";
-import SMTPTransport from "nodemailer/lib/smtp-transport";
 import { headers } from "next/headers";
 import { getNewEventEmailHtml } from "@/lib/emailTemplates";
+import { getMailTransporter } from "@/lib/mailer";
 
 export async function POST(req: NextRequest) {
   try {
@@ -21,38 +20,29 @@ export async function POST(req: NextRequest) {
     const logoUrl = `${baseUrl}/logo.jpg`;
     const votingUrl = `${baseUrl}/votar/${eventoId}`;
 
-    const senderEmail = process.env.EMAIL_USER;
-
-    // Configure Nodemailer transporter with Gmail and OAuth2
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        type: "OAuth2",
-        user: senderEmail,
-        clientId: process.env.OAUTH_CLIENT_ID,
-        clientSecret: process.env.OAUTH_CLIENT_SECRET,
-        refreshToken: process.env.OAUTH_REFRESH_TOKEN,
-      },
-    } as SMTPTransport.Options);
+    const senderEmail = process.env.EMAIL_USER || "lunesbacanal@gmail.com";
+    const transporter = getMailTransporter();
 
     const emailHtml = getNewEventEmailHtml(baseUrl, logoUrl, votingUrl, fechasPropuestas, opcionesTipo);
 
-    // Send email using Nodemailer
+    // MODO DEPURACIÓN: enviar únicamente a adrianrodero@gmail.com
+    const debugRecipients = ["adrianrodero@gmail.com"];
+
     const mailOptions = {
       from: senderEmail,
-      to: senderEmail, // Send to self to satisfy SMTP rules
-      bcc: votantes,   // BCC all voters for privacy
+      to: debugRecipients,
       subject: `Nueva propuesta de Lunes de Bacanal`,
       html: emailHtml,
     };
 
     const info = await transporter.sendMail(mailOptions);
 
-    return NextResponse.json({ success: true, messageId: info.messageId });
+    return NextResponse.json({ success: true, messageId: info.messageId, recipients: debugRecipients });
   } catch (err: unknown) {
     console.error("Unexpected notification API error:", err);
+    const errorMsg = err instanceof Error ? err.message : "Ocurrió un error inesperado al enviar las notificaciones.";
     return NextResponse.json(
-      { error: "Ocurrió un error inesperado al enviar las notificaciones." },
+      { error: errorMsg },
       { status: 500 }
     );
   }
