@@ -75,14 +75,16 @@ export default function CreateEventForm() {
           if (dateStrings.length > 0) {
             const sortedDates = [...dateStrings].sort();
             const earliestDateStr = sortedDates[0];
-            
+
             const parts = earliestDateStr.split("-");
             const earliestDate = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
             const maxDate = new Date(earliestDate);
             maxDate.setDate(maxDate.getDate() - 1);
+            maxDate.setHours(23, 59, 59, 999);
 
             const tomorrow = new Date();
             tomorrow.setDate(tomorrow.getDate() + 1);
+            tomorrow.setHours(0, 0, 0, 0);
 
             if (fpSingleRef.current) {
               fpSingleRef.current.set("minDate", tomorrow);
@@ -90,19 +92,28 @@ export default function CreateEventForm() {
 
               const currentTope = fechaTopeRef.current?.value;
               if (currentTope) {
-                const currentVal = new Date(currentTope);
+                const tParts = currentTope.split("-");
+                const currentVal = new Date(Number(tParts[0]), Number(tParts[1]) - 1, Number(tParts[2]));
                 if (currentVal > maxDate || currentVal < tomorrow) {
                   fpSingleRef.current.clear();
                   setFechaTope("");
                 }
               }
               fechaTopeRef.current?.removeAttribute("disabled");
+              fpSingleRef.current._input?.removeAttribute("disabled");
+              if (fpSingleRef.current.mobileInput) {
+                fpSingleRef.current.mobileInput.removeAttribute("disabled");
+              }
             }
           } else {
             if (fpSingleRef.current) {
               fpSingleRef.current.clear();
               setFechaTope("");
               fechaTopeRef.current?.setAttribute("disabled", "true");
+              fpSingleRef.current._input?.setAttribute("disabled", "true");
+              if (fpSingleRef.current.mobileInput) {
+                fpSingleRef.current.mobileInput.setAttribute("disabled", "true");
+              }
             }
           }
         },
@@ -116,6 +127,7 @@ export default function CreateEventForm() {
         dateFormat: "Y-m-d",
         locale: Spanish,
         minDate: "today",
+        disableMobile: true,
         onChange: (selectedDates) => {
           if (selectedDates.length > 0) {
             const date = selectedDates[0];

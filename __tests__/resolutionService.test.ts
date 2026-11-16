@@ -10,7 +10,6 @@ describe("Resolution service", () => {
     creador_email: "creator@example.com",
     votantes_pendientes: [],
     estado: "abierto",
-    created_at: new Date().toISOString(),
   };
 
   it("should determine an absolute winner with single highest voted date", () => {
