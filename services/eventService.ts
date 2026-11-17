@@ -170,18 +170,6 @@ export async function checkAndResolveEvent(
   const { winner, isTie, winningDates } = calculateWinner(ev);
   const eventDocRef = doc(db, "events", ev.id);
 
-  if (winner) {
-    await updateDoc(eventDocRef, {
-      estado: "cerrado",
-      fecha_elegida: winner,
-    });
-  } else {
-    await updateDoc(eventDocRef, {
-      estado: "empate",
-      fechas_empatadas: winningDates,
-    });
-  }
-
   const usersList = await fetchAllUsers();
   const creatorUser = usersList.find((u) => u.uid === ev.creador_uid);
   const creatorEmail = creatorUser?.email || ev.creador_email;
@@ -211,10 +199,9 @@ export async function checkAndResolveEvent(
 
   const winnerTipo = winner ? ev.opciones_tipo?.[winner] || "cena" : "cena";
 
-  await fetch("/api/comprobar-resolucion", {
+  const res = await fetch("/api/comprobar-resolucion", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    keepalive: true,
     body: JSON.stringify({
       eventoId: ev.id,
       resolvedByClient: true,
@@ -226,6 +213,23 @@ export async function checkAndResolveEvent(
       creatorEmail,
     }),
   });
+
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.error || "Error al enviar correo de resolución.");
+  }
+
+  if (winner) {
+    await updateDoc(eventDocRef, {
+      estado: "cerrado",
+      fecha_elegida: winner,
+    });
+  } else {
+    await updateDoc(eventDocRef, {
+      estado: "empate",
+      fechas_empatadas: winningDates,
+    });
+  }
 
   return true;
 }
