@@ -120,16 +120,21 @@ export default function VoteForm({ eventId }: VoteFormProps) {
       // Registrar voto usando la capa de servicio
       await submitVote(eventId, user.email, selectedDates);
 
-      // Llamar al backend para comprobar la resolución
-      fetch("/api/comprobar-resolucion", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          eventoId: eventId,
-          voterEmail: user.email,
-          selectedDates: selectedDates,
-        }),
-      }).catch((err) => console.error("Resolution check failed (non-blocking):", err));
+      // Llamar al backend para comprobar la resolución y esperar antes de navegar
+      try {
+        await fetch("/api/comprobar-resolucion", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          keepalive: true,
+          body: JSON.stringify({
+            eventoId: eventId,
+            voterEmail: user.email,
+            selectedDates: selectedDates,
+          }),
+        });
+      } catch (err) {
+        console.error("Resolution check failed (non-blocking):", err);
+      }
 
       router.push("/");
     } catch (err: unknown) {
@@ -158,16 +163,21 @@ export default function VoteForm({ eventId }: VoteFormProps) {
       // Registrar voto en blanco [] usando la capa de servicio
       await submitVote(eventId, user.email, []);
 
-      // Llamar al backend para comprobar la resolución
-      fetch("/api/comprobar-resolucion", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          eventoId: eventId,
-          voterEmail: user.email,
-          selectedDates: [],
-        }),
-      }).catch((err) => console.error("Resolution check failed (non-blocking):", err));
+      // Llamar al backend para comprobar la resolución y esperar antes de navegar
+      try {
+        await fetch("/api/comprobar-resolucion", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          keepalive: true,
+          body: JSON.stringify({
+            eventoId: eventId,
+            voterEmail: user.email,
+            selectedDates: [],
+          }),
+        });
+      } catch (err) {
+        console.error("Resolution check failed (non-blocking):", err);
+      }
 
       router.push("/");
     } catch (err: unknown) {
@@ -195,16 +205,21 @@ export default function VoteForm({ eventId }: VoteFormProps) {
       const dates = attend && singleDate ? [singleDate] : [];
       await submitVote(eventId, user.email, dates);
 
-      // Llamar al backend para comprobar la resolución
-      fetch("/api/comprobar-resolucion", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          eventoId: eventId,
-          voterEmail: user.email,
-          selectedDates: dates,
-        }),
-      }).catch((err) => console.error("Resolution check failed (non-blocking):", err));
+      // Llamar al backend para comprobar la resolución y esperar antes de navegar
+      try {
+        await fetch("/api/comprobar-resolucion", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          keepalive: true,
+          body: JSON.stringify({
+            eventoId: eventId,
+            voterEmail: user.email,
+            selectedDates: dates,
+          }),
+        });
+      } catch (err) {
+        console.error("Resolution check failed (non-blocking):", err);
+      }
 
       router.push("/");
     } catch (err: unknown) {
