@@ -8,13 +8,55 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   try {
-    const { eventoId, fecha_elegida } = await req.json();
+    const body = await req.json();
+    const {
+      eventoId,
+      fecha_elegida,
+      resolvedByClient,
+      confirmedAttendees: clientConfirmedAttendees,
+      allEmails: clientAllEmails,
+      winnerTipo: clientWinnerTipo,
+    } = body;
 
     if (!eventoId || !fecha_elegida) {
       return NextResponse.json(
         { error: "Faltan parámetros obligatorios (eventoId, fecha_elegida)." },
         { status: 400 }
       );
+    }
+
+    const headersList = headers();
+    const origin = headersList.get("origin") || "";
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || origin || "http://localhost:3000";
+    const logoUrl = `${baseUrl}/logo.jpg`;
+
+    if (resolvedByClient) {
+      const { html: emailHtml, attachments } = getWinnerEmailHtml(
+        baseUrl,
+        logoUrl,
+        fecha_elegida,
+        clientConfirmedAttendees || [],
+        clientWinnerTipo || "cena"
+      );
+
+      const senderEmail = process.env.EMAIL_USER || "lunesbacanal@gmail.com";
+      const transporter = getMailTransporter();
+
+      if (Array.isArray(clientAllEmails) && clientAllEmails.length > 0) {
+        await transporter.sendMail({
+          from: senderEmail,
+          to: senderEmail,
+          bcc: clientAllEmails,
+          subject: `Bacanal confirmada: ${fecha_elegida}`,
+          html: emailHtml,
+          attachments,
+        });
+      }
+
+      return NextResponse.json({
+        success: true,
+        attendees_count: (clientConfirmedAttendees || []).length,
+      });
     }
 
     // 1. Obtener el evento
@@ -73,11 +115,6 @@ export async function POST(req: NextRequest) {
 
     // Ordenar alfabéticamente
     confirmedAttendees.sort((a, b) => a.nombre.localeCompare(b.nombre));
-
-    const headersList = headers();
-    const origin = headersList.get("origin") || "";
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || origin || "http://localhost:3000";
-    const logoUrl = `${baseUrl}/logo.jpg`;
 
     const winnerTipo = ev.opciones_tipo?.[fecha_elegida] || "cena";
     // Generar HTML de correo

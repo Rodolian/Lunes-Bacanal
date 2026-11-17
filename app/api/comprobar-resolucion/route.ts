@@ -18,10 +18,67 @@ interface UsuarioDoc {
 
 export async function POST(req: NextRequest) {
   try {
-    const { eventoId, voterEmail, selectedDates } = await req.json();
+    const body = await req.json();
+    const {
+      eventoId,
+      voterEmail,
+      selectedDates,
+      resolvedByClient,
+      winner: clientWinner,
+      isTie: clientIsTie,
+      winnerTipo: clientWinnerTipo,
+      confirmedAttendees: clientConfirmedAttendees,
+      allEmails: clientAllEmails,
+      creatorEmail: clientCreatorEmail,
+    } = body;
 
     if (!eventoId) {
       return NextResponse.json({ error: "Falta eventoId." }, { status: 400 });
+    }
+
+    const headersList = headers();
+    const origin = headersList.get("origin") || "";
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || origin || "http://localhost:3000";
+    const logoUrl = `${baseUrl}/logo.jpg`;
+
+    if (resolvedByClient) {
+      const senderEmail = process.env.EMAIL_USER || "lunesbacanal@gmail.com";
+      const transporter = getMailTransporter();
+
+      if (clientWinner) {
+        const { html: emailHtml, attachments } = getWinnerEmailHtml(
+          baseUrl,
+          logoUrl,
+          clientWinner,
+          clientConfirmedAttendees || [],
+          clientWinnerTipo || "cena"
+        );
+
+        if (Array.isArray(clientAllEmails) && clientAllEmails.length > 0) {
+          await transporter.sendMail({
+            from: senderEmail,
+            to: senderEmail,
+            bcc: clientAllEmails,
+            subject: `Bacanal confirmada: ${clientWinner}`,
+            html: emailHtml,
+            attachments,
+          });
+        }
+      } else if (clientCreatorEmail) {
+        const emailHtml = getTieEmailHtml(baseUrl, logoUrl);
+        await transporter.sendMail({
+          from: senderEmail,
+          to: clientCreatorEmail,
+          subject: `Empate en tu bacanal`,
+          html: emailHtml,
+        });
+      }
+
+      return NextResponse.json({
+        resolved: true,
+        winner: clientWinner || null,
+        tie: !!clientIsTie,
+      });
     }
 
     // 1. Leer el estado actual del evento
@@ -73,11 +130,6 @@ export async function POST(req: NextRequest) {
 
     const creatorUser = usersList.find((u) => u.uid === ev.creador_uid);
     const creatorEmail = creatorUser?.email || ev.creador_email;
-
-    const headersList = headers();
-    const origin = headersList.get("origin") || "";
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || origin || "http://localhost:3000";
-    const logoUrl = `${baseUrl}/logo.jpg`;
 
     // 5. Enviar correos de notificación
     try {

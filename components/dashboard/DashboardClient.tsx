@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { subscribeToUserProfile, subscribeToAllUsers } from "@/services/userService";
-import { subscribeToPendingEvents, subscribeToAllEvents, resolveTie } from "@/services/eventService";
+import { subscribeToPendingEvents, subscribeToAllEvents, resolveTie, checkAndResolveEvent } from "@/services/eventService";
 import { Event, UserProfile } from "@/services/types";
 
 // Import custom Presentation components
@@ -21,6 +21,7 @@ export default function DashboardClient() {
   const [dbUser, setDbUser] = useState<UserProfile | null>(null);
   const [resolvingId, setResolvingId] = useState<string | null>(null);
   const [usersList, setUsersList] = useState<UserProfile[]>([]);
+  const autoResolvedIdsRef = useRef<Set<string>>(new Set());
 
   // Subscriptions to User profile & User list
   useEffect(() => {
@@ -58,6 +59,29 @@ export default function DashboardClient() {
       unsubscribeAll();
     };
   }, [user]);
+
+  // Resolver automáticamente eventos abiertos que ya tengan votantes_pendientes vacío o fecha_tope vencida
+  useEffect(() => {
+    if (!user?.email || allEvents.length === 0) return;
+
+    const todayStr = new Date().toISOString().split("T")[0];
+    allEvents.forEach((ev) => {
+      if (ev.estado === "cerrado" || ev.estado === "empate") return;
+      if (autoResolvedIdsRef.current.has(ev.id)) return;
+
+      const everyoneHasVoted =
+        !ev.votantes_pendientes || ev.votantes_pendientes.length === 0;
+      const isDeadlineReached = ev.fecha_tope ? ev.fecha_tope <= todayStr : false;
+
+      if (everyoneHasVoted || isDeadlineReached) {
+        autoResolvedIdsRef.current.add(ev.id);
+        checkAndResolveEvent(ev).catch((err) => {
+          console.error("Auto-resolve error:", err);
+          autoResolvedIdsRef.current.delete(ev.id);
+        });
+      }
+    });
+  }, [allEvents, user]);
 
   const handleResolveTie = async (eventoId: string, fecha: string) => {
     const key = `${eventoId}-${fecha}`;

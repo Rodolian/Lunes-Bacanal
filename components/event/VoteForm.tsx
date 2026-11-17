@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { subscribeToEvent, submitVote } from "@/services/eventService";
+import { subscribeToEvent, submitVote, checkAndResolveEvent } from "@/services/eventService";
 import { Event } from "@/services/types";
 import { useRouter } from "next/navigation";
 import flatpickr from "flatpickr";
@@ -120,18 +120,11 @@ export default function VoteForm({ eventId }: VoteFormProps) {
       // Registrar voto usando la capa de servicio
       await submitVote(eventId, user.email, selectedDates);
 
-      // Llamar al backend para comprobar la resolución y esperar antes de navegar
+      // Comprobar si la votación ha concluido, cerrar evento y enviar correo
       try {
-        await fetch("/api/comprobar-resolucion", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          keepalive: true,
-          body: JSON.stringify({
-            eventoId: eventId,
-            voterEmail: user.email,
-            selectedDates: selectedDates,
-          }),
-        });
+        if (evento) {
+          await checkAndResolveEvent(evento, user.email, selectedDates);
+        }
       } catch (err) {
         console.error("Resolution check failed (non-blocking):", err);
       }
@@ -163,18 +156,11 @@ export default function VoteForm({ eventId }: VoteFormProps) {
       // Registrar voto en blanco [] usando la capa de servicio
       await submitVote(eventId, user.email, []);
 
-      // Llamar al backend para comprobar la resolución y esperar antes de navegar
+      // Comprobar si la votación ha concluido, cerrar evento y enviar correo
       try {
-        await fetch("/api/comprobar-resolucion", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          keepalive: true,
-          body: JSON.stringify({
-            eventoId: eventId,
-            voterEmail: user.email,
-            selectedDates: [],
-          }),
-        });
+        if (evento) {
+          await checkAndResolveEvent(evento, user.email, []);
+        }
       } catch (err) {
         console.error("Resolution check failed (non-blocking):", err);
       }
@@ -205,18 +191,11 @@ export default function VoteForm({ eventId }: VoteFormProps) {
       const dates = attend && singleDate ? [singleDate] : [];
       await submitVote(eventId, user.email, dates);
 
-      // Llamar al backend para comprobar la resolución y esperar antes de navegar
+      // Comprobar si la votación ha concluido, cerrar evento y enviar correo
       try {
-        await fetch("/api/comprobar-resolucion", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          keepalive: true,
-          body: JSON.stringify({
-            eventoId: eventId,
-            voterEmail: user.email,
-            selectedDates: dates,
-          }),
-        });
+        if (evento) {
+          await checkAndResolveEvent(evento, user.email, dates);
+        }
       } catch (err) {
         console.error("Resolution check failed (non-blocking):", err);
       }
